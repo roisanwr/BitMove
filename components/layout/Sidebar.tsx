@@ -14,7 +14,7 @@ export function Sidebar() {
     { label: "Dashboard", href: "/", icon: Grid },
     { label: "Daily Quests", href: "/quests", icon: Award },
     { label: "Training Ground", href: "/training", icon: Dumbbell },
-    { label: "Ledger", href: "/ledger", icon: ReceiptText },
+    { label: "Mission Log", href: "/mission-log", icon: ReceiptText },
     { label: "Black Market", href: "/market", icon: Store },
   ];
 
