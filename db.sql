@@ -24,6 +24,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.profiles (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     username text UNIQUE, 
+    password_hash text, -- 🔐 DITAMBAHKAN: Untuk menyimpan password yang sudah di-hash oleh backend
     full_name text,
     avatar_url text,
     role public.user_role DEFAULT 'user'::public.user_role,
@@ -214,7 +215,7 @@ CREATE TRIGGER on_task_completion
 AFTER UPDATE OF is_completed ON public.tasks
 FOR EACH ROW EXECUTE FUNCTION public.handle_task_completion();
 
--- Fitur: Game Stats Processing (Level Up Logic & 🐛 FIXED TIMEZONE BUG)
+-- Fitur: Game Stats Processing (Level Up Logic & FIXED TIMEZONE BUG)
 CREATE OR REPLACE FUNCTION public.process_game_stats() RETURNS trigger AS $$
 DECLARE
     new_level int;
@@ -223,7 +224,6 @@ BEGIN
     SET 
         current_points = current_points + NEW.points_change,
         current_xp = current_xp + NEW.xp_change,
-        -- KUTU #1 DIPERBAIKI: Gunakan timezone spesifik user, BUKAN UTC server!
         last_active_date = CASE 
             WHEN NEW.xp_change > 0 THEN (now() AT TIME ZONE coalesce(timezone, 'Asia/Jakarta'))::date 
             ELSE last_active_date 
@@ -245,7 +245,7 @@ AFTER INSERT ON public.point_logs
 FOR EACH ROW EXECUTE FUNCTION public.process_game_stats();
 
 -- =================================================================================
--- 6. THE MEGA OPTIMIZED CRON JOB (Set-Based Operation & 🐛 FIXED GLITCHES) 🔥
+-- 6. THE MEGA OPTIMIZED CRON JOB (Set-Based Operation) 🔥
 -- =================================================================================
 CREATE OR REPLACE FUNCTION public.handle_smart_global_reset() RETURNS void AS $$
 BEGIN
@@ -289,7 +289,6 @@ BEGIN
         HAVING COUNT(t.id) > 0 AND (COUNT(CASE WHEN t.is_completed THEN 1 END)::float / COUNT(t.id)::float) >= 0.8;
 
         -- UPDATE Profil: Streak & last_reset_date
-        -- KUTU #2 DIPERBAIKI: Jika gak punya task, streak tidak nambah dan tidak riset (Pause)
         UPDATE public.profiles p
         SET 
             streak_current = CASE 
@@ -336,7 +335,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- KUTU #3 DIPERBAIKI: Penjadwalan ulang Cron yang aman (Mengganti $$ dengan ' agar tidak tabrakan blok)
+-- Penjadwalan ulang Cron yang aman
 DO $$
 BEGIN
     PERFORM cron.unschedule('hourly-smart-global-reset');

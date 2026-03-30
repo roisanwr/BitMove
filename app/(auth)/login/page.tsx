@@ -22,14 +22,14 @@ export default function LoginPage() {
         <form action={formAction} className="space-y-6">
           <div>
             <label className="block text-[10px] uppercase font-bold text-[#ababab] tracking-widest mb-1">
-              Email Address
+              Codename (Username)
             </label>
             <input
-              type="email"
-              name="email"
+              type="text"
+              name="username"
               required
               className="w-full bg-[#1f1f1f] border border-[#484848] px-4 py-3 text-sm focus:border-[#8eff71] focus:outline-none transition-colors"
-              placeholder="OPERATIVE@NETWORK.COM"
+              placeholder="E.G. SHADOW_ACT"
             />
           </div>
 

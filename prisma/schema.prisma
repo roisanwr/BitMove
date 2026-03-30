@@ -4,8 +4,6 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 enum scale_type_enum {
@@ -45,7 +43,6 @@ enum user_role {
 model profiles {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username          String?   @unique
-  email             String?   @unique
   password_hash     String?
   full_name         String?
   avatar_url        String?

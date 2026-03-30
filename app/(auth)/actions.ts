@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 export async function loginAction(prevState: any, formData: FormData) {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
+      username: formData.get("username"),
       password: formData.get("password"),
       redirectTo: "/",
     });
@@ -17,9 +17,9 @@ export async function loginAction(prevState: any, formData: FormData) {
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return { error: "Invalid credentials." };
+          return { error: "Operative not found." };
         default:
-          return { error: "Something went wrong." };
+          return { error: "System malfunction." };
       }
     }
     throw error;
@@ -28,23 +28,20 @@ export async function loginAction(prevState: any, formData: FormData) {
 
 export async function registerAction(prevState: any, formData: FormData) {
   const username = formData.get("username") as string;
-  const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const fullName = formData.get("fullName") as string;
 
-  if (!username || !email || !password) {
-    return { error: "Missing required fields." };
+  if (!username || !password) {
+    return { error: "Codename and Passcode are required." };
   }
 
   // Check existing user
-  const existingUser = await prisma.profiles.findFirst({
-    where: {
-      OR: [{ email }, { username }],
-    },
+  const existingUser = await prisma.profiles.findUnique({
+    where: { username },
   });
 
   if (existingUser) {
-    return { error: "Username or email already exists." };
+    return { error: "Codename already in use." };
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -53,13 +50,12 @@ export async function registerAction(prevState: any, formData: FormData) {
     await prisma.profiles.create({
       data: {
         username,
-        email,
         password_hash: hashedPassword,
         full_name: fullName,
       },
     });
   } catch (error) {
-    return { error: "Failed to create account." };
+    return { error: "Failed to initialize operative profile." };
   }
 
   redirect("/login");
