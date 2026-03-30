@@ -89,7 +89,6 @@ export async function finishWorkout(workoutId: string) {
       }
     });
 
-    // 3. Award XP in point_logs
     if (totalXp > 0) {
       await tx.point_logs.create({
         data: {
@@ -105,4 +104,27 @@ export async function finishWorkout(workoutId: string) {
 
   revalidatePath("/training");
   revalidatePath("/");
+}
+
+export async function createExercise(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const name = formData.get("name") as string;
+  const muscle = formData.get("muscle") as string;
+  const unit = formData.get("unit") as string || "reps";
+
+  if (!name) return;
+
+  await prisma.exercise_library.create({
+    data: {
+      name,
+      target_muscle: muscle,
+      scale_type: "strength",
+      measurement_unit: unit,
+      created_by: session.user.id
+    }
+  });
+
+  revalidatePath("/training");
 }

@@ -28,6 +28,11 @@ export default async function TrainingPage() {
     }
   });
 
+  const library = await prisma.exercise_library.findMany({
+    where: { is_archived: false },
+    orderBy: { name: "asc" }
+  });
+
   return (
     <div className="max-w-5xl mx-auto pb-24">
       <div className="mb-8">
@@ -40,7 +45,7 @@ export default async function TrainingPage() {
       </div>
 
       {activeWorkout ? (
-        <ActiveWorkoutUI workout={activeWorkout} />
+        <ActiveWorkoutUI workout={activeWorkout} library={library} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-surface-container p-8 border-t-4 border-secondary relative overflow-hidden group">
