@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum scale_type_enum {
+  endurance
+  strength
+  power
+  static_hold
+  cardio_run
+}
+
+enum task_frequency {
+  Daily
+  Weekly
+  OneTime
+}
+
+enum task_priority {
+  Low
+  Medium
+  High
+}
+
+enum tier_enum {
+  D
+  C
+  B
+  A
+  S
+  SS
+}
+
+enum user_role {
+  user
+  admin
+}
+
+model profiles {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username          String?   @unique
+  email             String?   @unique
+  password_hash     String?
+  full_name         String?
+  avatar_url        String?
+  role              user_role @default(user)
+  timezone          String?   @default("Asia/Jakarta")
+  level             Int?      @default(1)
+  current_xp        Int?      @default(0)
+  current_points    Int?      @default(0)
+  streak_current    Int?      @default(0)
+  streak_max        Int?      @default(0)
+  last_active_date  DateTime? @db.Date
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+  last_reset_date   DateTime? @db.Date
+  last_weekly_reset DateTime? @db.Date
+
+  point_logs        point_logs[]
+  tasks             tasks[]
+  workouts          workouts[]
+  rewards           rewards[]
+  exercise_library  exercise_library[]
+}
+
+model point_logs {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String    @db.Uuid
+  xp_change     Int?      @default(0)
+  points_change Int?      @default(0)
+  source_type   String?
+  description   String?
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  profiles      profiles  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model tasks {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String         @db.Uuid
+  title             String
+  category          String
+  priority          task_priority? @default(Medium)
+  frequency         task_frequency? @default(Daily)
+  target_value      Int?           @default(1)
+  unit              String?        @default("Checklist")
+  current_value     Int?           @default(0)
+  is_completed      Boolean?       @default(false)
+  last_completed_at DateTime?      @db.Timestamptz(6)
+  created_at        DateTime?      @default(now()) @db.Timestamptz(6)
+  is_custom         Boolean?       @default(false)
+
+  profiles          profiles       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model workouts {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String              @db.Uuid
+  started_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  ended_at            DateTime?           @db.Timestamptz(6)
+  status              String?             @default("in_progress")
+  total_xp_earned     Int?                @default(0)
+  total_points_earned Int?                @default(0)
+  notes               String?
+
+  profiles            profiles            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workout_exercises   workout_exercises[]
+}
+
+model rewards {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  title       String
+  price       Int
+  image_url   String?
+  is_redeemed Boolean?  @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  profiles    profiles  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model level_rules {
+  level  Int    @id
+  min_xp Int
+  title  String?
+}
+
+model task_library {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                String
+  category             String
+  default_priority     task_priority?  @default(Medium)
+  default_frequency    task_frequency? @default(Daily)
+  default_target_value Int?            @default(1)
+  default_unit         String?         @default("Checklist")
+  icon_emoji           String?
+}
+
+model difficulty_scales {
+  scale_type   scale_type_enum
+  tier         tier_enum
+  target_value Int
+
+  @@id([scale_type, tier])
+}
+
+model tier_rewards {
+  tier          tier_enum @id
+  xp_reward     Int
+  points_reward Int
+}
+
+model exercise_library {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  target_muscle    String?
+  scale_type       scale_type_enum
+  measurement_unit String?          @default("reps")
+  image_url        String?
+  is_archived      Boolean?         @default(false)
+  created_by       String?          @db.Uuid
+
+  profiles         profiles?        @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  workout_exercises workout_exercises[]
+}
+
+model workout_exercises {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workout_id  String           @db.Uuid
+  exercise_id String           @db.Uuid
+  notes       String?
+
+  workouts    workouts         @relation(fields: [workout_id], references: [id], onDelete: Cascade)
+  exercises   exercise_library @relation(fields: [exercise_id], references: [id], onDelete: Cascade)
+  sets        sets[]
+}
+
+model sets {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workout_exercise_id String             @db.Uuid
+  set_number          Int
+  tier                tier_enum
+  target_value        Int
+  completed_value     Int?
+  weight_kg           Float?             @default(0)
+  is_completed        Boolean?           @default(false)
+
+  workout_exercises   workout_exercises  @relation(fields: [workout_exercise_id], references: [id], onDelete: Cascade)
+}
