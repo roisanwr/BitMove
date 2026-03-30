@@ -8,9 +8,9 @@ export function TopBar() {
   const [time, setTime] = useState("");
 
   useEffect(() => {
-    setTime(formatTime(new Date()) + " LCL");
+    setTime(formatTime(new Date()));
     const interval = setInterval(() => {
-      setTime(formatTime(new Date()) + " LCL");
+      setTime(formatTime(new Date()));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -29,13 +29,13 @@ export function TopBar() {
           {time}
         </span>
       </div>
-      
+
       <div className="flex items-center gap-6">
         <div className="relative flex items-center bg-surface-container-high px-3 py-1 border border-outline-variant/30 focus-within:border-primary transition-colors">
           <Search className="w-4 h-4 text-primary mr-2" />
-          <input 
-            className="bg-transparent border-none text-[10px] font-headline uppercase outline-none focus:ring-0 w-48 text-white placeholder-on-surface-variant" 
-            placeholder="QUERY DATABASE..." 
+          <input
+            className="bg-transparent border-none text-[10px] font-headline uppercase outline-none focus:ring-0 w-48 text-white placeholder-on-surface-variant"
+            placeholder="QUERY DATABASE..."
             type="text"
           />
         </div>
@@ -44,10 +44,10 @@ export function TopBar() {
           <ShieldPlus className="w-5 h-5 text-on-surface-variant hover:text-secondary cursor-pointer transition-transform" />
         </div>
         <div className="h-10 w-10 bg-primary-container p-[2px] cursor-pointer hover:bg-secondary transition-colors">
-          <img 
-            alt="Commander" 
-            className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all" 
-            src="https://ui-avatars.com/api/?name=Elite+Op&background=000&color=8eff71&bold=true&font-size=0.4" 
+          <img
+            alt="Commander"
+            className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all"
+            src="https://ui-avatars.com/api/?name=Elite+Op&background=000&color=8eff71&bold=true&font-size=0.4"
           />
         </div>
       </div>
