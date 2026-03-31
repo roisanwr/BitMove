@@ -23,6 +23,10 @@ export default async function QuestsPage() {
     ]
   });
 
+  const taskLibrary = await prisma.task_library.findMany({
+    orderBy: { category: "asc" }
+  });
+
   return (
     <div className="max-w-4xl mx-auto pb-24">
       <div className="mb-8">
@@ -35,7 +39,7 @@ export default async function QuestsPage() {
       </div>
 
       <QuestList initialTasks={tasks} />
-      <CreateQuestForm />
+      <CreateQuestForm library={taskLibrary} />
     </div>
   );
 }

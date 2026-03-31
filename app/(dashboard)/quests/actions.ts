@@ -81,3 +81,49 @@ export async function createTask(formData: FormData) {
   revalidatePath("/quests");
   return { success: true };
 }
+
+export async function createTaskFromLibrary(libraryId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  // Cek apakah task dari library ini sudah ada di daftar user (aktif, bukan custom)
+  const existing = await prisma.tasks.findFirst({
+    where: {
+      user_id: session.user.id,
+      is_custom: false,
+    }
+  });
+
+  const template = await prisma.task_library.findUnique({
+    where: { id: libraryId }
+  });
+
+  if (!template) return { error: "Template not found" };
+
+  // Cek apakah task dengan judul yang sama sudah ada
+  const duplicate = await prisma.tasks.findFirst({
+    where: {
+      user_id: session.user.id,
+      title: template.title,
+    }
+  });
+
+  if (duplicate) return { error: "Task sudah ada di daftar kamu" };
+
+  await prisma.tasks.create({
+    data: {
+      user_id: session.user.id,
+      title: template.title,
+      category: template.category,
+      priority: template.default_priority ?? "Medium",
+      frequency: template.default_frequency ?? "Daily",
+      target_value: template.default_target_value ?? 1,
+      unit: template.default_unit ?? "Checklist",
+      is_custom: false,
+      current_value: 0,
+    }
+  });
+
+  revalidatePath("/quests");
+  return { success: true };
+}

@@ -341,6 +341,34 @@ BEGIN
         SET is_completed = false, current_value = 0, last_completed_at = null
         WHERE frequency = 'Daily' AND user_id IN (SELECT id FROM temp_users_to_reset);
 
+        -- =====================================================================
+        -- STEP 5: HUKUMAN BOLOS TRAINING WORKOUT ⚔️
+        -- Jika kemarin ada jadwal program latihan, tapi tidak ada workout 'completed'
+        -- =====================================================================
+        INSERT INTO public.point_logs (user_id, xp_change, points_change, source_type, description)
+        SELECT DISTINCT u.id, -150, -50, 'punishment', 'Missed Scheduled Workout! Pemalas! 😤'
+        FROM temp_users_to_reset u
+        -- User memiliki program aktif
+        JOIN public.training_programs tp ON tp.user_id = u.id AND tp.is_active = true
+        -- Hitung minggu mana yang berlaku kemarin
+        JOIN public.program_schedules ps ON ps.program_id = tp.id
+            AND ps.day_of_week = EXTRACT(ISODOW FROM (now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+            AND ps.week_number = (
+                FLOOR(
+                    EXTRACT(DAY FROM (
+                        ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1) - tp.start_date
+                    ))::numeric / 7
+                )::int % tp.total_weeks
+            ) + 1
+        -- Tapi TIDAK ada workout yang completed kemarin
+        WHERE NOT EXISTS (
+            SELECT 1 FROM public.workouts w
+            WHERE w.user_id = u.id
+              AND w.status = 'completed'
+              AND (w.ended_at AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date = 
+                  ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+        );
+
     END IF;
 
     -- =====================================================================

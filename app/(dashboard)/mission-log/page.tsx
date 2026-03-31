@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { format } from "date-fns";
 
 export const metadata = {
   title: "MISSION LOG | BITMOVE",
@@ -56,7 +55,17 @@ export default async function MissionLogPage() {
                   return (
                     <tr key={log.id} className="hover:bg-surface-bright transition-colors text-white">
                       <td className="p-4 text-xs text-on-surface-variant font-body">
-                        {log.created_at ? format(new Date(log.created_at), "yyyy-MM-dd HH:mm") : "-"}
+                        {log.created_at
+                          ? new Intl.DateTimeFormat("id-ID", {
+                              timeZone: "Asia/Jakarta",
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false,
+                            }).format(new Date(log.created_at))
+                          : "-"}
                       </td>
                       <td className="p-4 uppercase text-[#ababab]">{log.source_type}</td>
                       <td className="p-4">{log.description}</td>
