@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { Prisma } from "@prisma/client"
 
 export async function createReward(formData: FormData) {
   const session = await auth();
@@ -29,7 +30,7 @@ export async function redeemReward(rewardId: string, price: number) {
   if (!session?.user?.id) throw new Error("Unauthorized");
   const userId = session.user.id;
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => { // <-- TAMBAHKAN TIPE DATANYA DI SINI
     // 1. Get user to check points
     const user = await tx.profiles.findUnique({ where: { id: userId } });
     if (!user || (user.current_points || 0) < price) {

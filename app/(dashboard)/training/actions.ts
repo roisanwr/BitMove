@@ -69,7 +69,7 @@ export async function finishWorkout(workoutId: string) {
 
   const userId = session.user.id;
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const workout = await tx.workouts.findUnique({
       where: { id: workoutId },
       include: {

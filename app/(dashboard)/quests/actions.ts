@@ -21,12 +21,12 @@ export async function toggleTask(taskId: string, isCompleted: boolean, priority:
     const xpReward = priority === "High" ? 150 : priority === "Medium" ? 75 : 30;
     const pointsReward = priority === "High" ? 50 : priority === "Medium" ? 25 : 10;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => { // <-- TAMBAHKAN TIPE DATANYA DI SINI
       // 1. Mark task complete
       await tx.tasks.update({
         where: { id: taskId, user_id: userId },
-        data: { 
-          is_completed: true, 
+        data: {
+          is_completed: true,
           last_completed_at: new Date(),
           current_value: 1
         }
