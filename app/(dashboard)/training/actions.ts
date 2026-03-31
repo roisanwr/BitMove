@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { tier_enum } from "@prisma/client";
+import { tier_enum, Prisma } from "@prisma/client"; // <-- INI YANG DITAMBAHKAN
 
 export async function addExerciseToWorkout(workoutId: string, exerciseId: string) {
   const session = await auth();
