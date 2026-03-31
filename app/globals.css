@@ -34,6 +34,10 @@
   body {
     @apply bg-surface-container-lowest text-white font-body selection:bg-primary selection:text-black overflow-y-auto min-h-[100dvh];
   }
+  
+  select option {
+    @apply bg-surface-container-high text-white hover:bg-primary hover:text-black;
+  }
 }
 
 @layer utilities {
