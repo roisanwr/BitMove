@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { LogOut, Settings, Grid, Award, Dumbbell, ReceiptText, Store } from "lucide-react";
 import { useState } from "react";
 
-export function Sidebar() {
+export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boolean; setIsDesktopOpen: (val: boolean) => void }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,7 +31,8 @@ export function Sidebar() {
         id="sidebar"
         className={cn(
           "fixed left-0 top-0 h-full flex flex-col z-50 bg-[#0e0e0e] w-64 border-r-0 shadow-[4px_0_0_0_#1f1f1f] transition-transform duration-300 ease-in-out",
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          isDesktopOpen ? "md:translate-x-0" : "md:-translate-x-full"
         )}
       >
         <div className="p-6 pt-20 md:pt-6">

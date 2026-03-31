@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Search, Bell, ShieldPlus, Menu } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 
-export function TopBar() {
+import { cn } from "@/lib/utils";
+
+export function TopBar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boolean; setIsDesktopOpen: (val: boolean) => void }) {
   const [time, setTime] = useState("");
 
   useEffect(() => {
@@ -16,8 +18,19 @@ export function TopBar() {
   }, []);
 
   return (
-    <header className="hidden md:flex fixed top-0 right-0 w-[calc(100%-16rem)] justify-between items-center px-8 z-40 h-16 bg-[#000000]/80 backdrop-blur-md border-b-4 border-[#191919] transition-all duration-300">
+    <header className={cn(
+      "hidden md:flex fixed top-0 right-0 justify-between items-center px-8 z-40 h-16 bg-[#000000]/80 backdrop-blur-md border-b-4 border-[#191919] transition-all duration-300",
+      isDesktopOpen ? "w-[calc(100%-16rem)]" : "w-full"
+    )}>
       <div className="flex items-center gap-4">
+        <button 
+          onClick={() => setIsDesktopOpen(!isDesktopOpen)}
+          className="text-primary hover:text-white transition-colors flex items-center justify-center p-1 rounded hover:bg-surface-container-high cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-2xl">
+            {isDesktopOpen ? "menu_open" : "menu"}
+          </span>
+        </button>
         <span className="text-primary font-headline font-black text-xl tracking-widest">BIT MOVE</span>
         <span className="h-4 w-[2px] bg-outline-variant"></span>
         <span className="flex items-center gap-2 font-headline font-bold text-xs text-on-surface-variant uppercase tracking-tighter">

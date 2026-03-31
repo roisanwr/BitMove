@@ -127,4 +127,5 @@ export async function createExercise(formData: FormData) {
   });
 
   revalidatePath("/training");
+  revalidatePath("/training/library");
 }
