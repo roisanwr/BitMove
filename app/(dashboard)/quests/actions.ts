@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { Prisma } from "@prisma/client" // <-- Ini wajib ada jika di bawah pakai Prisma.TransactionClient
 
 export async function toggleTask(taskId: string, isCompleted: boolean, priority: string = "Medium") {
   const session = await auth();
@@ -21,12 +22,12 @@ export async function toggleTask(taskId: string, isCompleted: boolean, priority:
     const xpReward = priority === "High" ? 150 : priority === "Medium" ? 75 : 30;
     const pointsReward = priority === "High" ? 50 : priority === "Medium" ? 25 : 10;
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => { // <-- TAMBAHKAN TIPE DATANYA DI SINI
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Mark task complete
       await tx.tasks.update({
         where: { id: taskId, user_id: userId },
-        data: {
-          is_completed: true,
+        data: { 
+          is_completed: true, 
           last_completed_at: new Date(),
           current_value: 1
         }
