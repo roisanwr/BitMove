@@ -19,9 +19,9 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
   });
 
   const openAdd = () => {
-    setFormData({ 
-      name: "", target_muscle: "", scale_type: "strength", 
-      measurement_unit: "reps", image_url: "", is_archived: false 
+    setFormData({
+      name: "", target_muscle: "", scale_type: "strength",
+      measurement_unit: "reps", image_url: "", is_archived: false
     });
     setEditingItem(null);
     setIsModalOpen(true);
@@ -77,7 +77,7 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
             MASTER DATA: PHYSICAL TRAINING MOVEMENT DATABASE.
           </p>
         </div>
-        <button 
+        <button
           onClick={openAdd}
           className="bg-primary hover:bg-white text-black font-headline font-black px-4 py-2 uppercase tracking-widest transition-colors text-xs shadow-[0_0_10px_rgba(142,255,113,0.3)] hover:shadow-none"
         >
@@ -142,8 +142,8 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
         )}
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingItem ? "EDIT EXERCISE" : "ADD NEW EXERCISE"}
         width="max-w-2xl"
@@ -152,29 +152,29 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Movement Name</label>
-              <input 
+              <input
                 type="text" required
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
                 placeholder="e.g. Barbell Bench Press, Plank"
               />
             </div>
             <div>
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Target Muscle</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={formData.target_muscle}
-                onChange={(e) => setFormData({...formData, target_muscle: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, target_muscle: e.target.value })}
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
                 placeholder="e.g. Chest, Core"
               />
             </div>
             <div>
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Scale Type</label>
-              <select 
+              <select
                 value={formData.scale_type}
-                onChange={(e) => setFormData({...formData, scale_type: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, scale_type: e.target.value })}
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
               >
                 <option value="endurance">Endurance</option>
@@ -182,49 +182,50 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
                 <option value="power">Power</option>
                 <option value="static_hold">Static Hold</option>
                 <option value="cardio_run">Cardio Run</option>
+                <option value="mobility">Mobility</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Measurement Unit</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={formData.measurement_unit}
-                onChange={(e) => setFormData({...formData, measurement_unit: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, measurement_unit: e.target.value })}
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
                 placeholder="e.g. reps, secs, km"
               />
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Image URL (Optional)</label>
-              <input 
-                type="url" 
+              <input
+                type="url"
                 value={formData.image_url}
-                onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
                 placeholder="https://..."
               />
             </div>
             <div className="md:col-span-2 flex items-center gap-2 mt-2">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="archived"
                 checked={formData.is_archived}
-                onChange={(e) => setFormData({...formData, is_archived: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, is_archived: e.target.checked })}
                 className="w-4 h-4 bg-transparent border border-outline-variant checked:bg-primary accent-primary"
               />
               <label htmlFor="archived" className="text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant select-none">Mark as Archived</label>
             </div>
           </div>
           <div className="pt-4 flex justify-end gap-3 border-t border-outline-variant/30 mt-6">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setIsModalOpen(false)}
               className="px-4 py-2 mt-2 font-headline text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-white transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="bg-primary hover:bg-white mt-2 text-black font-headline text-xs font-black px-6 py-2 uppercase tracking-widest transition-colors disabled:opacity-50"
             >

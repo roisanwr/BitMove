@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 2. CUSTOM TYPES (ENUMS)
 DO $$ BEGIN
-    CREATE TYPE public.scale_type_enum AS ENUM ('endurance', 'strength', 'power', 'static_hold', 'cardio_run');
+    CREATE TYPE public.scale_type_enum AS ENUM ('endurance', 'strength', 'power', 'static_hold', 'cardio_run', 'mobility');
     CREATE TYPE public.task_frequency AS ENUM ('Daily', 'Weekly', 'OneTime');
     CREATE TYPE public.task_priority AS ENUM ('Low', 'Medium', 'High');
     CREATE TYPE public.tier_enum AS ENUM ('D', 'C', 'B', 'A', 'S', 'SS');
@@ -396,12 +396,87 @@ INSERT INTO public.difficulty_scales (scale_type, tier, target_value) VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.exercise_library (id, name, target_muscle, scale_type, measurement_unit, image_url, is_archived, created_by) VALUES
-('e85d3189-208c-4a16-837e-401dee267d4c','Push Up','Chest','strength','reps',NULL,false,NULL),
+('e85d3189-208c-4a16-837e-401dee267d4c','Push Up klasik','Chest','strength','reps',NULL,false,NULL),
 ('9a140a43-6e19-44d1-80f1-f5230ad8f6ab','Pull Up','Back','power','reps',NULL,false,NULL),
 ('8b8892a6-2b7f-4fee-a96b-25feb363fa4c','Squat','Legs','endurance','reps',NULL,false,NULL),
 ('785459cf-b419-4b68-ab82-9f65be08ae74','Plank','Core','static_hold','seconds',NULL,false,NULL),
 ('382b049d-91a9-4111-a20e-0156bc369af4','Jogging','Cardio','cardio_run','meters',NULL,false,NULL),
-('f91a14e6-382a-42b3-89ab-bc187b31a051','Burpees','Full Body','strength','reps',NULL,false,NULL)
+('f91a14e6-382a-42b3-89ab-bc187b31a051','Burpees','Full Body','strength','reps',NULL,false,NULL),
+
+('a1f0c1a1-0001-4a16-837e-401dee267d4c','Incline Push Up','Chest','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0002-4a16-837e-401dee267d4c','Decline Push Up','Chest','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0003-4a16-837e-401dee267d4c','Diamond Push Up','Chest','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0004-4a16-837e-401dee267d4c','Archer Push Up','Chest','strength','reps',NULL,false,NULL),
+
+('a1f0c1a1-0005-4a16-837e-401dee267d4c','Pike Push Up','Shoulders','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0006-4a16-837e-401dee267d4c','Elevated Pike Push Up','Shoulders','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0007-4a16-837e-401dee267d4c','Pike Push Up Hold','Shoulders','static_hold','seconds',NULL,false,NULL),
+
+('a1f0c1a1-0008-4a16-837e-401dee267d4c','Triceps Dips','Arms','strength','reps',NULL,false,NULL),
+
+('a1f0c1a1-0009-4a16-837e-401dee267d4c','Bulgarian Split Squat','Legs','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0010-4a16-837e-401dee267d4c','Lunge','Legs','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0011-4a16-837e-401dee267d4c','Walking Lunge','Legs','endurance','reps',NULL,false,NULL),
+
+('a1f0c1a1-0012-4a16-837e-401dee267d4c','Glute Bridge','Glutes','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0013-4a16-837e-401dee267d4c','Single Leg Glute Bridge','Glutes','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0014-4a16-837e-401dee267d4c','Donkey Kicks','Glutes','endurance','reps',NULL,false,NULL),
+
+('a1f0c1a1-0015-4a16-837e-401dee267d4c','Calf Raises','Legs','endurance','reps',NULL,false,NULL),
+('a1f0c1a1-0016-4a16-837e-401dee267d4c','Wall Sit','Legs','static_hold','seconds',NULL,false,NULL),
+
+('a1f0c1a1-0017-4a16-837e-401dee267d4c','Superman Row','Back','strength','reps',NULL,false,NULL),
+
+('a1f0c1a1-0018-4a16-837e-401dee267d4c','Leg Raise','Core','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0019-4a16-837e-401dee267d4c','Hanging Knee Raise','Core','strength','reps',NULL,false,NULL),
+
+('a1f0c1a1-0020-4a16-837e-401dee267d4c','Sit Up','Core','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0021-4a16-837e-401dee267d4c','Bicycle Crunch','Core','endurance','seconds',NULL,false,NULL),
+('a1f0c1a1-0022-4a16-837e-401dee267d4c','Russian Twist','Core','endurance','reps',NULL,false,NULL),
+('a1f0c1a1-0023-4a16-837e-401dee267d4c','Side Plank Reach Through','Core','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0024-4a16-837e-401dee267d4c','Side Plank','Core','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0025-4a16-837e-401dee267d4c','Hollow Body Hold','Core','static_hold','seconds',NULL,false,NULL),
+
+('a1f0c1a1-0026-4a16-837e-401dee267d4c','Bird Dog','Core','endurance','reps',NULL,false,NULL),
+
+('a1f0c1a1-0027-4a16-837e-401dee267d4c','Dynamic Stretching','Mobility','mobility','seconds',NULL,false,NULL),
+('a1f0c1a1-0028-4a16-837e-401dee267d4c','Deep Squat Hold','Mobility','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0029-4a16-837e-401dee267d4c','Shoulder Rolls','Shoulders','mobility','reps',NULL,false,NULL),
+('a1f0c1a1-0030-4a16-837e-401dee267d4c','Breathing Exercise','Recovery','static_hold','seconds',NULL,false,NULL),
+
+-- Tambahan Pasukan Pull (Punggung & Bisep)
+('a1f0c1a1-0031-4a16-837e-401dee267d4c','Bodyweight Row','Back','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0032-4a16-837e-401dee267d4c','Chin Up','Back','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0033-4a16-837e-401dee267d4c','Muscle Up','Back','power','reps',NULL,false,NULL),
+('a1f0c1a1-0034-4a16-837e-401dee267d4c','Front Lever','Back','static_hold','seconds',NULL,false,NULL),
+
+-- Tambahan Dips & Handstand (Dada, Bahu, Trisep)
+('a1f0c1a1-0035-4a16-837e-401dee267d4c','Parallel Bar Dips','Chest','strength','reps',NULL,false,NULL),
+('a1f0c1a1-0036-4a16-837e-401dee267d4c','Handstand Hold','Shoulders','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0037-4a16-837e-401dee267d4c','Handstand Push Up','Shoulders','strength','reps',NULL,false,NULL),
+
+-- Tambahan Skill Core & Kaki Advanced
+('a1f0c1a1-0038-4a16-837e-401dee267d4c','L-Sit','Core','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0039-4a16-837e-401dee267d4c','Pistol Squat','Legs','strength','reps',NULL,false,NULL),
+
+-- Tambahan Cardio / Conditioning (Bisa di rumah)
+('a1f0c1a1-0040-4a16-837e-401dee267d4c','Jumping Jacks','Cardio','endurance','seconds',NULL,false,NULL),
+('a1f0c1a1-0041-4a16-837e-401dee267d4c','Mountain Climbers','Cardio','endurance','seconds',NULL,false,NULL),
+('a1f0c1a1-0042-4a16-837e-401dee267d4c','Jump Rope','Cardio','endurance','seconds',NULL,false,NULL),
+
+
+-- Tambahan Variasi Latihan Pernapasan (Recovery & Fokus)
+('a1f0c1a1-0043-4a16-837e-401dee267d4c','Box Breathing','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0044-4a16-837e-401dee267d4c','Diaphragmatic Breathing','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0045-4a16-837e-401dee267d4c','4-7-8 Breathing','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0046-4a16-837e-401dee267d4c','Wim Hof Breathing','Recovery','static_hold','seconds',NULL,false,NULL),
+
+-- Tambahan Latihan Apnea & Freediving (Dry Training)
+('a1f0c1a1-0047-4a16-837e-401dee267d4c','Dry Static Apnea','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0048-4a16-837e-401dee267d4c','CO2 Tolerance Table','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0049-4a16-837e-401dee267d4c','O2 Deprivation Table','Recovery','static_hold','seconds',NULL,false,NULL),
+('a1f0c1a1-0050-4a16-837e-401dee267d4c','Apnea Walk','Cardio','endurance','meters',NULL,false,NULL),
+('a1f0c1a1-0051-4a16-837e-401dee267d4c','Ribcage Expansion Stretch','Mobility','mobility','seconds',NULL,false,NULL)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.level_rules (level, min_xp, title) VALUES

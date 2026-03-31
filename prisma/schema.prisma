@@ -192,6 +192,7 @@ enum scale_type_enum {
   power
   static_hold
   cardio_run
+  mobility
 }
 
 enum task_frequency {

@@ -76,7 +76,7 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
             MASTER DATA: BASE TARGET VALUES PER MEASUREMENT TYPE AND TIER.
           </p>
         </div>
-        <button 
+        <button
           onClick={openAdd}
           className="bg-primary hover:bg-white text-black font-headline font-black px-4 py-2 uppercase tracking-widest transition-colors text-xs shadow-[0_0_10px_rgba(142,255,113,0.3)] hover:shadow-none"
         >
@@ -115,14 +115,13 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
                   {items.map((item: any) => (
                     <tr key={`${item.scale_type}-${item.tier}`} className="hover:bg-surface-bright transition-colors text-white">
                       <td className="p-4 text-xs font-black w-24">
-                        <span className={`px-2 py-1 rounded-sm ${
-                          item.tier === 'SS' ? 'bg-[#ffcc00]/20 text-[#ffcc00]' :
-                          item.tier === 'S'  ? 'bg-error/20 text-error' :
-                          item.tier === 'A'  ? 'bg-[#ff8800]/20 text-[#ff8800]' :
-                          item.tier === 'B'  ? 'bg-primary/20 text-primary' :
-                          item.tier === 'C'  ? 'bg-secondary/20 text-secondary' :
-                          'bg-surface-container-higher text-on-surface'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-sm ${item.tier === 'SS' ? 'bg-[#ffcc00]/20 text-[#ffcc00]' :
+                            item.tier === 'S' ? 'bg-error/20 text-error' :
+                              item.tier === 'A' ? 'bg-[#ff8800]/20 text-[#ff8800]' :
+                                item.tier === 'B' ? 'bg-primary/20 text-primary' :
+                                  item.tier === 'C' ? 'bg-secondary/20 text-secondary' :
+                                    'bg-surface-container-higher text-on-surface'
+                          }`}>
                           {item.tier}
                         </span>
                       </td>
@@ -140,17 +139,17 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
         )}
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingItem ? `EDIT: ${editingItem.scale_type.toUpperCase()} / TIER ${editingItem.tier}` : "ADD NEW SCALE / TIER"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Scale Type</label>
-            <select 
+            <select
               value={formData.scale_type}
-              onChange={(e) => setFormData({...formData, scale_type: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, scale_type: e.target.value })}
               className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
             >
               <option value="endurance">Endurance</option>
@@ -158,13 +157,14 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
               <option value="power">Power</option>
               <option value="static_hold">Static Hold</option>
               <option value="cardio_run">Cardio Run</option>
+              <option value="mobility">Mobility</option>
             </select>
           </div>
           <div>
             <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Tier</label>
-            <select 
+            <select
               value={formData.tier}
-              onChange={(e) => setFormData({...formData, tier: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
               className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
             >
               <option value="D">D</option>
@@ -177,26 +177,26 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
           </div>
           <div>
             <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Target Base Value</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               required
               min={0}
               value={formData.target_value}
-              onChange={(e) => setFormData({...formData, target_value: e.target.valueAsNumber})}
+              onChange={(e) => setFormData({ ...formData, target_value: e.target.valueAsNumber })}
               className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
             />
           </div>
-          
+
           <div className="pt-4 flex justify-end gap-3">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => setIsModalOpen(false)}
               className="px-4 py-2 font-headline text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-white transition-colors"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isLoading}
               className="bg-primary hover:bg-white text-black font-headline text-xs font-black px-6 py-2 uppercase tracking-widest transition-colors disabled:opacity-50"
             >
