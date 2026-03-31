@@ -21,41 +21,26 @@ export async function addExerciseToWorkout(workoutId: string, exerciseId: string
 
 export async function logSet(
   workoutExerciseId: string,
-  setNumber: number,
   weightKg: number,
-  completedValue: number,
-  targetTier: "D" | "C" | "B" | "A" | "S" | "SS"
+  completedValue: number
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // Ambil target_value dari difficulty_scales sesuai tier dan scale_type exercise
-  const workoutExercise = await prisma.workout_exercises.findUnique({
-    where: { id: workoutExerciseId },
-    include: { exercises: true },
+  // Hitung set number berikutnya secara otomatis
+  const existingSetsCount = await prisma.sets.count({
+    where: { workout_exercise_id: workoutExerciseId }
   });
-
-  let targetValue = 10; // fallback
-  if (workoutExercise) {
-    const scale = await prisma.difficulty_scales.findUnique({
-      where: {
-        scale_type_tier: {
-          scale_type: workoutExercise.exercises.scale_type,
-          tier: targetTier as tier_enum,
-        },
-      },
-    });
-    if (scale) targetValue = scale.target_value;
-  }
+  const nextSetNum = existingSetsCount + 1;
 
   await prisma.sets.create({
     data: {
       workout_exercise_id: workoutExerciseId,
-      set_number: setNumber,
+      set_number: nextSetNum,
       weight_kg: weightKg,
       completed_value: completedValue,
-      target_value: targetValue,
-      tier: targetTier as tier_enum,
+      target_value: 0, // Dummy value, validasi schema
+      tier: "C", // Dummy value, XP dihitung di finishWorkout berdasarkan akumulasi
       is_completed: true,
     }
   });
@@ -74,28 +59,51 @@ export async function finishWorkout(workoutId: string) {
       where: { id: workoutId },
       include: {
         workout_exercises: {
-          include: { sets: true }
+          include: { 
+            sets: true,
+            exercises: true 
+          }
         }
       }
     });
 
     if (!workout) return;
 
-    // Hitung XP dari tier_rewards
+    // Ambil semua reward dan list scale
     const tierRewards = await tx.tier_rewards.findMany();
     const rewardMap = Object.fromEntries(tierRewards.map((r) => [r.tier, r]));
+    const diffScales = await tx.difficulty_scales.findMany();
 
     let totalXp = 0;
     let totalPoints = 0;
 
     for (const we of workout.workout_exercises) {
-      for (const set of we.sets) {
-        if (set.is_completed) {
-          const reward = rewardMap[set.tier];
-          if (reward) {
-            totalXp += reward.xp_reward;
-            totalPoints += reward.points_reward;
-          }
+      if (we.sets.length === 0) continue;
+
+      // Kumpulkan total volume reps/waktu
+      const totalReps = we.sets.reduce((sum, s) => sum + (s.completed_value || 0), 0);
+      
+      // Ambil scales untuk tipe exercise ini, urutkan dari nilai terkecil
+      const scales = diffScales
+        .filter(s => s.scale_type === we.exercises.scale_type)
+        .sort((a,b) => a.target_value - b.target_value);
+
+      // Cari tier maksimal yang dicapai
+      let achievedTier = null;
+      for (const scale of scales) {
+        if (totalReps >= scale.target_value) {
+          achievedTier = scale.tier;
+        } else {
+          break; // Kalau gak sampe target selanjutnya, stop
+        }
+      }
+
+      // Berikan reward berdasarkan tier maksimal tersebut (1x hadiah per gerakan)
+      if (achievedTier) {
+        const reward = rewardMap[achievedTier];
+        if (reward) {
+          totalXp += reward.xp_reward;
+          totalPoints += reward.points_reward;
         }
       }
     }

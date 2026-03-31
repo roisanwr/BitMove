@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { PlaySquare, CheckCircle, PlusSquare, ArrowRight, X, Plus } from "lucide-react";
 import { addExerciseToWorkout, logSet, finishWorkout, createExercise } from "./actions";
 
-import type { workouts, workout_exercises, sets, exercise_library } from "@prisma/client";
+import type { workouts, workout_exercises, sets, exercise_library, difficulty_scales } from "@prisma/client";
 
 type WorkoutWithRelations = workouts & {
   workout_exercises: (workout_exercises & {
@@ -13,7 +13,17 @@ type WorkoutWithRelations = workouts & {
   })[];
 };
 
-export function ActiveWorkoutUI({ workout, library }: { workout: WorkoutWithRelations, library: exercise_library[] }) {
+export function ActiveWorkoutUI({ 
+  workout, 
+  library,
+  difficultyScales,
+  todaysSchedule
+}: { 
+  workout: WorkoutWithRelations, 
+  library: exercise_library[],
+  difficultyScales: difficulty_scales[],
+  todaysSchedule: any[]
+}) {
   const [isPending, startTransition] = useTransition();
   const [showLib, setShowLib] = useState(false);
   const [showNewEx, setShowNewEx] = useState(false);
@@ -29,15 +39,31 @@ export function ActiveWorkoutUI({ workout, library }: { workout: WorkoutWithRela
   const handleAddSet = (exerciseId: string, formData: FormData) => {
     const weight = parseFloat(formData.get("weight") as string) || 0;
     const reps = parseInt(formData.get("reps") as string) || 0;
-    const tier = formData.get("tier") as any || "C";
     
-    // Calculate next set number
-    const exercise = workout.workout_exercises.find((we) => we.id === exerciseId);
-    const nextSetNum = exercise ? exercise.sets.length + 1 : 1;
-
     startTransition(async () => {
-      await logSet(exerciseId, nextSetNum, weight, reps, tier);
+      // Kita tetap lempar 'C' ke action karena schema butuh validasi Not Null, tapi nilainya ini dihiraukan di perombakan baru
+      await logSet(exerciseId, weight, reps);
     });
+  };
+
+  const getProgress = (scale_type: string, cumulativeValue: number) => {
+    const scales = difficultyScales
+      .filter((s) => s.scale_type === scale_type)
+      .sort((a, b) => a.target_value - b.target_value);
+    
+    let currentTier = "None";
+    let nextTierObj = scales[0]; 
+    
+    for(let i=0; i<scales.length; i++) {
+      if(cumulativeValue >= scales[i].target_value) {
+        currentTier = scales[i].tier;
+        nextTierObj = scales[i+1];
+      } else {
+        nextTierObj = scales[i];
+        break;
+      }
+    }
+    return { currentTier, nextTierObj };
   };
 
   return (
@@ -62,81 +88,117 @@ export function ActiveWorkoutUI({ workout, library }: { workout: WorkoutWithRela
       </div>
 
       <div className="space-y-10">
-        {workout.workout_exercises?.map((we, index: number) => (
-          <div key={we.id} className="bg-surface-container-low border border-outline-variant/20 p-6 relative group overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-outline-variant group-hover:bg-primary transition-colors"></div>
-            
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="font-headline font-black uppercase text-xl text-primary">{we.exercises.name}</h3>
-                <span className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  TARGET: {we.exercises.target_muscle}
+        {workout.workout_exercises?.map((we, index: number) => {
+          const missionTarget = todaysSchedule?.find(s => s.exercise_id === we.exercise_id);
+          const cumulativeReps = we.sets.reduce((sum, s) => sum + (s.completed_value || 0), 0);
+          const { currentTier, nextTierObj } = getProgress(we.exercises.scale_type, cumulativeReps);
+          
+          return (
+            <div key={we.id} className="bg-surface-container-low border border-outline-variant/20 p-6 relative group overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-outline-variant group-hover:bg-primary transition-colors"></div>
+              
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="font-headline font-black uppercase text-xl text-primary">{we.exercises.name}</h3>
+                  <span className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant">
+                    TARGET: {we.exercises.target_muscle}
+                  </span>
+                </div>
+                <span className="font-headline font-black text-4xl text-surface-container-highest select-none">
+                  0{index + 1}
                 </span>
               </div>
-              <span className="font-headline font-black text-4xl text-surface-container-highest select-none">
-                0{index + 1}
-              </span>
-            </div>
 
-            {/* Sets Table */}
-            {we.sets.length > 0 && (
-              <div className="mb-6 overflow-x-auto">
-                <table className="w-full text-left font-headline mt-4">
-                  <thead>
-                    <tr className="text-[10px] text-on-surface-variant border-b border-outline-variant uppercase tracking-widest">
-                      <th className="pb-2 px-2">Set</th>
-                      <th className="pb-2 px-2">Weight (KG)</th>
-                      <th className="pb-2 px-2">Reps</th>
-                      <th className="pb-2 px-2 text-center">Tier</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {we.sets.map((set) => (
-                      <tr key={set.id} className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors text-white font-bold">
-                        <td className="py-3 px-2 text-on-surface-variant">{set.set_number}</td>
-                        <td className="py-3 px-2">{set.weight_kg}</td>
-                        <td className="py-3 px-2 text-primary">{set.completed_value}</td>
-                        <td className="py-3 px-2 text-center text-secondary">{set.tier}</td>
+              {/* RPG PROGRESS TRACKER */}
+              <div className="mb-6 bg-surface-container-highest border border-outline-variant/30 p-4">
+                <div className="flex justify-between items-end mb-2">
+                  <div>
+                    <div className="font-headline font-bold text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">CUMULATIVE PROGRESS</div>
+                    <div className="font-headline font-black text-2xl text-white">
+                      {currentTier === "None" ? "UNRANKED" : `TIER ${currentTier}`}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-headline font-bold text-[10px] text-primary uppercase tracking-widest mb-1">
+                      TOTAL {we.exercises.measurement_unit?.toUpperCase() || "REPS"}
+                    </div>
+                    <div className="font-headline font-black text-xl text-primary">{cumulativeReps}</div>
+                  </div>
+                </div>
+                
+                {nextTierObj && (
+                  <div>
+                    <div className="w-full bg-surface-container h-2 mt-3 overflow-hidden">
+                      <div className="bg-primary h-full transition-all duration-500" style={{ width: `${Math.min(100, (cumulativeReps / nextTierObj.target_value) * 100)}%` }}></div>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                       <span className="font-headline font-bold text-[9px] text-on-surface-variant tracking-widest uppercase">TARGET TIER {nextTierObj.tier}</span>
+                       <span className="font-headline font-bold text-[9px] text-on-surface-variant tracking-widest uppercase">{cumulativeReps} / {nextTierObj.target_value}</span>
+                    </div>
+                  </div>
+                )}
+
+                {currentTier === "SS" && (
+                  <div className="mt-3 font-headline font-bold text-[10px] text-yellow-400 uppercase tracking-widest">
+                    🔥 MAX TIER REACHED! INCREDIBLE PERFORMANCE!
+                  </div>
+                )}
+
+                {missionTarget && (
+                  <div className="mt-4 inline-block bg-secondary/10 border border-secondary/30 text-secondary px-3 py-1.5 font-headline font-black text-[10px] uppercase tracking-widest">
+                    QUEST TARGET: TIER {missionTarget.target_tier}
+                  </div>
+                )}
+              </div>
+
+              {/* Sets Table */}
+              {we.sets.length > 0 && (
+                <div className="mb-6 overflow-x-auto">
+                  <table className="w-full text-left font-headline mt-4">
+                    <thead>
+                      <tr className="text-[10px] text-on-surface-variant border-b border-outline-variant uppercase tracking-widest">
+                        <th className="pb-2 px-2">Set</th>
+                        <th className="pb-2 px-2">Weight (KG)</th>
+                        <th className="pb-2 px-2">Reps</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="text-sm">
+                      {we.sets.map((set) => (
+                        <tr key={set.id} className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors text-white font-bold">
+                          <td className="py-3 px-2 text-on-surface-variant">{set.set_number}</td>
+                          <td className="py-3 px-2">{set.weight_kg}</td>
+                          <td className="py-3 px-2 text-primary">{set.completed_value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-            {/* Log Set Form */}
-            <form 
-              action={(formData) => handleAddSet(we.id, formData)}
-              className="bg-surface-container p-4 border border-outline-variant/30 grid grid-cols-2 md:grid-cols-4 gap-4 items-end"
-            >
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">Weight (KG)</label>
-                <input type="number" step="0.5" name="weight" className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">Reps</label>
-                <input type="number" name="reps" required className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">Tier Rating</label>
-                <select name="tier" className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-secondary font-headline font-bold text-sm focus:border-primary outline-none appearance-none">
-                  <option value="C">C (Normal)</option>
-                  <option value="B">B (Good)</option>
-                  <option value="A">A (Excellent)</option>
-                  <option value="S">S (Mastery)</option>
-                  <option value="SS">SS (Legendary)</option>
-                </select>
-              </div>
-              <button 
-                type="submit" 
-                disabled={isPending}
-                className="bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-black font-headline font-black text-xs uppercase tracking-widest py-2.5 transition-colors disabled:opacity-50"
+              {/* Log Set Form */}
+              <form 
+                action={(formData) => handleAddSet(we.id, formData)}
+                className="bg-surface-container p-4 border border-outline-variant/30 grid grid-cols-2 md:grid-cols-3 gap-4 items-end"
               >
-                LOG SET
-              </button>
-            </form>
-          </div>
-        ))}
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">Weight (KG)</label>
+                  <input type="number" step="0.5" name="weight" className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">{we.exercises.measurement_unit || "Reps"}</label>
+                  <input type="number" name="reps" required className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isPending}
+                  className="bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-black font-headline font-black text-xs uppercase tracking-widest py-2.5 transition-colors disabled:opacity-50"
+                >
+                  LOG SET
+                </button>
+              </form>
+            </div>
+          );
+        })}
 
         <div className="pt-6 border-t border-dashed border-outline-variant/50 text-center">
           <button 

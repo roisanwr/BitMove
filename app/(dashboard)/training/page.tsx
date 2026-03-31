@@ -50,6 +50,9 @@ export default async function TrainingPage() {
     orderBy: { name: "asc" },
   });
 
+  const difficultyScales = await prisma.difficulty_scales.findMany();
+  const plan = await getTodayWorkoutPlan(session.user.id);
+
   return (
     <div className="max-w-5xl mx-auto pb-24">
       <div className="mb-8">
@@ -63,9 +66,14 @@ export default async function TrainingPage() {
 
       {activeWorkout ? (
         // STATE A: Ada workout in_progress → tampilkan ActiveWorkoutUI
-        <ActiveWorkoutUI workout={activeWorkout} library={library} />
+        <ActiveWorkoutUI 
+          workout={activeWorkout} 
+          library={library} 
+          difficultyScales={difficultyScales}
+          todaysSchedule={plan?.todaysSchedule || []}
+        />
       ) : (
-        <TodayMissionView userId={session.user.id} library={library} />
+        <TodayMissionView plan={plan} library={library} />
       )}
     </div>
   );
@@ -74,17 +82,15 @@ export default async function TrainingPage() {
 import type { exercise_library } from "@prisma/client";
 
 async function TodayMissionView({
-  userId,
+  plan,
   library,
 }: {
-  userId: string;
+  plan: any;
   library: exercise_library[];
 }) {
   const today = new Date();
   const todayDayNum = today.getDay() === 0 ? 7 : today.getDay();
   const todayName = DAY_NAMES[todayDayNum];
-
-  const plan = await getTodayWorkoutPlan(userId);
 
   // STATE C: Tidak ada program aktif → CTA ke builder
   if (!plan.hasPlan || !plan.activeProgram) {
