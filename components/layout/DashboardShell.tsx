@@ -9,12 +9,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-surface-container-lowest text-white font-body">
+    <div className="bg-surface-container-lowest text-white font-body">
       <Sidebar isDesktopOpen={isDesktopOpen} setIsDesktopOpen={setIsDesktopOpen} />
       <TopBar isDesktopOpen={isDesktopOpen} setIsDesktopOpen={setIsDesktopOpen} />
       <main 
         className={cn(
-          "pt-20 md:pt-24 p-4 md:p-8 min-h-screen transition-all duration-300",
+          "pt-24 px-4 pb-4 md:pt-28 md:px-8 md:pb-8 transition-all duration-300 min-h-screen",
           isDesktopOpen ? "md:ml-64" : "md:ml-0"
         )}
       >

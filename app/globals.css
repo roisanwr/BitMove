@@ -32,7 +32,7 @@
 
 @layer base {
   body {
-    @apply bg-surface-container-lowest text-white font-body selection:bg-primary selection:text-black overflow-x-hidden;
+    @apply bg-surface-container-lowest text-white font-body selection:bg-primary selection:text-black overflow-y-auto min-h-[100dvh];
   }
 }
 

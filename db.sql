@@ -148,6 +148,30 @@ CREATE TABLE IF NOT EXISTS public.sets (
     is_completed boolean DEFAULT false
 );
 
+-- ================== EKOSISTEM PROGRAM LATIHAN (WORKOUT PLAYLIST) ================== --
+
+-- 1. Induk Program / Playlist (Menyimpan Metadata)
+CREATE TABLE IF NOT EXISTS public.training_programs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title text NOT NULL,              -- Misal: "Program Pembentukan Otot Sparky"
+    total_weeks integer NOT NULL,     -- Durasi siklus (1, 2, 3, atau 4)
+    is_active boolean DEFAULT true,   -- Hanya 1 program yang boleh aktif per user
+    start_date date DEFAULT CURRENT_DATE, -- Kunci penentu rotasi minggu
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Detail Jadwal per Hari (Menyimpan Isi Playlist)
+CREATE TABLE IF NOT EXISTS public.program_schedules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    program_id uuid NOT NULL REFERENCES public.training_programs(id) ON DELETE CASCADE,
+    week_number integer NOT NULL,     -- Minggu ke: 1, 2, 3, atau 4
+    day_of_week integer NOT NULL,     -- Hari ke: 1 (Senin) sampai 7 (Minggu)
+    exercise_id uuid NOT NULL REFERENCES public.exercise_library(id),
+    target_tier public.tier_enum NOT NULL, -- Target kesulitan (misal: 'C')
+    notes text                        -- Pesan penyemangat / instruksi form
+);
+
 -- =================================================================================
 -- 4. DATABASE INDEXING (PENTING UNTUK PERFORMA! ⚡)
 -- =================================================================================
@@ -155,6 +179,8 @@ CREATE INDEX IF NOT EXISTS idx_tasks_user_freq ON public.tasks(user_id, frequenc
 CREATE INDEX IF NOT EXISTS idx_point_logs_user ON public.point_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_level ON public.profiles(level);
 CREATE INDEX IF NOT EXISTS idx_workouts_user ON public.workouts(user_id);
+CREATE INDEX IF NOT EXISTS idx_training_programs_user_active ON public.training_programs(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_program_schedules_program ON public.program_schedules(program_id, week_number, day_of_week);
 
 -- =================================================================================
 -- 5. OPTIMIZED FUNCTIONS & TRIGGERS
@@ -354,6 +380,8 @@ ALTER TABLE public.workouts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workout_exercises DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sets DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rewards DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.training_programs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.program_schedules DISABLE ROW LEVEL SECURITY;
 
 -- =================================================================================
 -- 8. SEED DATA (DATA BAWAAN APLIKASI - JANGAN SAMPAI HILANG!) 🎁

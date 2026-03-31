@@ -4,7 +4,16 @@ import { useState, useTransition } from "react";
 import { PlaySquare, CheckCircle, PlusSquare, ArrowRight, X, Plus } from "lucide-react";
 import { addExerciseToWorkout, logSet, finishWorkout, createExercise } from "./actions";
 
-export function ActiveWorkoutUI({ workout, library }: { workout: any, library: any[] }) {
+import type { workouts, workout_exercises, sets, exercise_library } from "@prisma/client";
+
+type WorkoutWithRelations = workouts & {
+  workout_exercises: (workout_exercises & {
+    exercises: exercise_library;
+    sets: sets[];
+  })[];
+};
+
+export function ActiveWorkoutUI({ workout, library }: { workout: WorkoutWithRelations, library: exercise_library[] }) {
   const [isPending, startTransition] = useTransition();
   const [showLib, setShowLib] = useState(false);
   const [showNewEx, setShowNewEx] = useState(false);
@@ -23,7 +32,7 @@ export function ActiveWorkoutUI({ workout, library }: { workout: any, library: a
     const tier = formData.get("tier") as any || "C";
     
     // Calculate next set number
-    const exercise = workout.workout_exercises.find((we: any) => we.id === exerciseId);
+    const exercise = workout.workout_exercises.find((we) => we.id === exerciseId);
     const nextSetNum = exercise ? exercise.sets.length + 1 : 1;
 
     startTransition(async () => {
@@ -53,7 +62,7 @@ export function ActiveWorkoutUI({ workout, library }: { workout: any, library: a
       </div>
 
       <div className="space-y-10">
-        {workout.workout_exercises?.map((we: any, index: number) => (
+        {workout.workout_exercises?.map((we, index: number) => (
           <div key={we.id} className="bg-surface-container-low border border-outline-variant/20 p-6 relative group overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-outline-variant group-hover:bg-primary transition-colors"></div>
             
@@ -82,7 +91,7 @@ export function ActiveWorkoutUI({ workout, library }: { workout: any, library: a
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {we.sets.map((set: any) => (
+                    {we.sets.map((set) => (
                       <tr key={set.id} className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors text-white font-bold">
                         <td className="py-3 px-2 text-on-surface-variant">{set.set_number}</td>
                         <td className="py-3 px-2">{set.weight_kg}</td>
@@ -183,7 +192,7 @@ export function ActiveWorkoutUI({ workout, library }: { workout: any, library: a
                   </div>
                 </form>
               ) : (
-                library.map((ex: any) => (
+                library.map((ex) => (
                   <div key={ex.id} className="bg-surface-container p-4 flex justify-between items-center hover:bg-surface-bright transition-colors border-l-2 border-transparent hover:border-primary group">
                     <div>
                       <div className="font-headline font-bold text-sm uppercase text-white">{ex.name}</div>
