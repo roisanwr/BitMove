@@ -4,14 +4,40 @@ import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export function DisciplineQuota({ quota = 40 }: { quota?: number }) {
+export function DisciplineQuota({ quota = 0 }: { quota?: number }) {
   const [currentQuota, setCurrentQuota] = useState(0);
+  const [timeLeft, setTimeLeft] = useState("00:00:00");
 
   useEffect(() => {
     // Animate bar on load
     const timer = setTimeout(() => setCurrentQuota(quota), 500);
     return () => clearTimeout(timer);
   }, [quota]);
+
+  useEffect(() => {
+    // Calculate time until midnight
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      
+      const diff = midnight.getTime() - now.getTime();
+      if (diff <= 0) return "00:00:00";
+      
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    setTimeLeft(calculateTimeLeft());
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const isSafe = currentQuota >= 80;
 
@@ -53,7 +79,7 @@ export function DisciplineQuota({ quota = 40 }: { quota?: number }) {
         <div className="mt-4 flex items-center gap-4 bg-error-container/20 p-3 border border-error/30">
           <AlertTriangle className="w-5 h-5 text-error animate-pulse" />
           <p className="font-headline font-bold text-[10px] md:text-xs uppercase text-error-dim tracking-widest">
-            WARNING: 80% REQUIRED. -200 POINT PENALTY IMMINENT IN <span className="text-error font-black">04:22:15</span>
+            WARNING: 80% REQUIRED. -200 POINT PENALTY IMMINENT IN <span className="text-error font-black">{timeLeft}</span>
           </p>
         </div>
       )}

@@ -11,30 +11,31 @@ type LogEntry = {
   isPenalty?: boolean;
 };
 
-export function MissionLog({ logs }: { logs?: LogEntry[] }) {
-  const defaultLogs: LogEntry[] = [
-    { id: "1", time: "12:04:22", action: "Training Ground: Heavy Lift Session", yield: "+450 XP" },
-    { id: "2", time: "09:15:00", action: "Daily Quest: Morning Meditation", yield: "+100 XP" },
-    { id: "3", time: "Yesterday", action: "Inactivity Penalty: Task Expired", yield: "-200 XP", isPenalty: true },
-  ];
-
-  const displayLogs = logs || defaultLogs;
-
+export function MissionLog({ 
+  logs = [],
+  credits = 0 
+}: { 
+  logs?: LogEntry[];
+  credits?: number;
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20 md:pb-0">
       <div className="md:col-span-1 bg-surface-container p-6 border-l-4 border-secondary overflow-hidden group hover:shadow-[0_0_20px_rgba(213,117,255,0.15)] transition-shadow flex flex-col">
         <h3 className="font-headline font-black text-lg uppercase mb-4 group-hover:text-secondary transition-colors flex justify-between items-center">
           <span>BLACK MARKET</span>
-          <ShoppingCart className="w-5 h-5" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-primary">{credits} PTS</span>
+            <ShoppingCart className="w-5 h-5" />
+          </div>
         </h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center bg-surface-container-low p-3 hover:bg-surface-bright cursor-pointer transition-colors border border-transparent hover:border-secondary/50">
             <span className="font-headline text-xs uppercase text-on-surface-variant group-hover:text-white">XP Multiplier (2h)</span>
-            <span className="font-headline font-black text-primary group-hover:scale-110 transition-transform">500 Cr</span>
+            <span className="font-headline font-black text-primary group-hover:scale-110 transition-transform">500 PTS</span>
           </div>
           <div className="flex justify-between items-center bg-surface-container-low p-3 hover:bg-surface-bright cursor-pointer transition-colors border border-transparent hover:border-secondary/50">
             <span className="font-headline text-xs uppercase text-on-surface-variant group-hover:text-white">Penalty Shield</span>
-            <span className="font-headline font-black text-primary group-hover:scale-110 transition-transform">1200 Cr</span>
+            <span className="font-headline font-black text-primary group-hover:scale-110 transition-transform">1200 PTS</span>
           </div>
         </div>
         <div className="mt-auto pt-8 relative overflow-hidden rounded-sm">
@@ -66,28 +67,34 @@ export function MissionLog({ logs }: { logs?: LogEntry[] }) {
               </tr>
             </thead>
             <tbody className="text-xs">
-              {displayLogs.map((log) => (
-                <tr 
-                  key={log.id} 
-                  className={cn(
-                    "border-b border-outline-variant/10 transition-colors",
-                    log.isPenalty ? "hover:bg-error/10 text-error" : "hover:bg-surface-container-high"
-                  )}
-                >
-                  <td className={cn("py-4 px-2 font-body", log.isPenalty ? "opacity-80" : "text-on-surface-variant")}>
-                    {log.time}
-                  </td>
-                  <td className={cn("py-4 px-2 uppercase font-bold", !log.isPenalty && "text-white")}>
-                    {log.action}
-                  </td>
-                  <td className={cn(
-                    "py-4 px-2 text-right font-black",
-                    !log.isPenalty && "text-primary"
-                  )}>
-                    {log.yield}
-                  </td>
+              {logs.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-on-surface-variant italic">No recent intel available.</td>
                 </tr>
-              ))}
+              ) : (
+                logs.map((log) => (
+                  <tr 
+                    key={log.id} 
+                    className={cn(
+                      "border-b border-outline-variant/10 transition-colors",
+                      log.isPenalty ? "hover:bg-error/10 text-error" : "hover:bg-surface-container-high"
+                    )}
+                  >
+                    <td className={cn("py-4 px-2 font-body", log.isPenalty ? "opacity-80" : "text-on-surface-variant")}>
+                      {log.time}
+                    </td>
+                    <td className={cn("py-4 px-2 uppercase font-bold", !log.isPenalty && "text-white")}>
+                      {log.action}
+                    </td>
+                    <td className={cn(
+                      "py-4 px-2 text-right font-black",
+                      !log.isPenalty && "text-primary"
+                    )}>
+                      {log.yield}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -2,35 +2,66 @@
 
 import { useMemo } from "react";
 
-export function Heatmap() {
-  const blocks = useMemo(() => {
+export function Heatmap({ 
+  activityMap = {}, 
+  streakMax = 0 
+}: { 
+  activityMap?: Record<string, number>;
+  streakMax?: number;
+}) {
+  const { blocks, stats } = useMemo(() => {
     const items = [];
     const colors = [
-      { class: 'bg-surface-container-highest', desc: '0 Actions', chance: 0.2 },
-      { class: 'bg-secondary-container/40', desc: 'Light Activity', chance: 0.3 },
-      { class: 'bg-secondary-container/70', desc: 'Moderate Activity', chance: 0.3 },
-      { class: 'bg-primary shadow-[0_0_5px_rgba(142,255,113,0.5)]', desc: 'Optimal Performance', chance: 0.2 }
+      { class: 'bg-surface-container-highest', desc: '0 Actions', min: 0 },
+      { class: 'bg-secondary-container/40', desc: 'Light Activity', min: 1 },
+      { class: 'bg-secondary-container/70', desc: 'Moderate Activity', min: 3 },
+      { class: 'bg-primary shadow-[0_0_5px_rgba(142,255,113,0.5)]', desc: 'Optimal Performance', min: 5 }
     ];
     
-    // Simulate 364 days
-    for (let i = 0; i < 364; i++) {
-      const rand = Math.random();
-      const selectedColor = rand < 0.2 ? colors[0] : rand < 0.5 ? colors[1] : rand < 0.8 ? colors[2] : colors[3];
+    let totalMisses = 0;
+    let totalActions = 0;
+    let activeDays = 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Simulate 364 days backward
+    for (let i = 363; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
       
-      const d = new Date(2024, 0, 1);
-      d.setDate(d.getDate() + i);
       const dateString = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const isoDate = d.toISOString().split('T')[0];
+      
+      const count = activityMap[isoDate] || 0;
+      
+      let selectedColor = colors[0];
+      if (count >= 5) selectedColor = colors[3];
+      else if (count >= 3) selectedColor = colors[2];
+      else if (count >= 1) selectedColor = colors[1];
+
+      if (count === 0) totalMisses++;
+      else activeDays++;
+
+      totalActions += count;
       
       items.push(
         <div 
           key={i}
           className={`w-[10px] h-[10px] md:w-3 md:h-3 rounded-sm ${selectedColor.class} hover:scale-125 hover:z-10 transition-transform cursor-pointer hover:outline hover:outline-1 hover:outline-white`}
-          title={`Date: ${dateString}\nStatus: ${selectedColor.desc}`}
+          title={`Date: ${dateString}\nStatus: ${count} Actions (${selectedColor.desc})`}
         />
       );
     }
-    return items;
-  }, []);
+
+    const compRate = (activeDays / 364).toFixed(2);
+    const avgFocus = Math.round((totalActions / (364 * 5)) * 100); // simplistic assumption: 5 actions/day = 100% focus
+
+    return { 
+      blocks: items, 
+      stats: { totalMisses, avgFocus: Math.min(100, avgFocus), compRate } 
+    };
+  }, [activityMap]);
 
   return (
     <div className="bg-surface-container p-6 md:p-8">
@@ -57,19 +88,19 @@ export function Heatmap() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         <div className="bg-surface-container-low p-4 border-t-2 border-primary">
           <div className="font-headline font-bold text-[10px] text-on-surface-variant uppercase mb-1">BEST STREAK</div>
-          <div className="font-headline font-black text-xl text-primary">82 DAYS</div>
+          <div className="font-headline font-black text-xl text-primary">{streakMax} DAYS</div>
         </div>
         <div className="bg-surface-container-low p-4 border-t-2 border-error">
           <div className="font-headline font-bold text-[10px] text-on-surface-variant uppercase mb-1">TOTAL MISSES</div>
-          <div className="font-headline font-black text-xl text-error">14 DAYS</div>
+          <div className="font-headline font-black text-xl text-error">{stats.totalMisses} DAYS</div>
         </div>
         <div className="bg-surface-container-low p-4 border-t-2 border-secondary">
           <div className="font-headline font-bold text-[10px] text-on-surface-variant uppercase mb-1">AVERAGE FOCUS</div>
-          <div className="font-headline font-black text-xl text-secondary">92%</div>
+          <div className="font-headline font-black text-xl text-secondary">{stats.avgFocus}%</div>
         </div>
         <div className="bg-surface-container-low p-4 border-t-2 border-primary-dim">
           <div className="font-headline font-bold text-[10px] text-on-surface-variant uppercase mb-1">COMPLETION RATE</div>
-          <div className="font-headline font-black text-xl text-primary-dim">0.88</div>
+          <div className="font-headline font-black text-xl text-primary-dim">{stats.compRate}</div>
         </div>
       </div>
     </div>
