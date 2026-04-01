@@ -390,12 +390,23 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Penjadwalan ulang Cron yang aman
+-- BUG FIX: unschedule dan schedule HARUS di-block terpisah.
+-- Jika unschedule gagal (job belum ada), exception akan SKIP schedule juga!
 DO $$
 BEGIN
-    PERFORM cron.unschedule('hourly-smart-global-reset');
-    PERFORM cron.schedule('hourly-smart-global-reset', '0 * * * *', 'SELECT public.handle_smart_global_reset()');
-EXCEPTION WHEN OTHERS THEN
-    NULL;
+    -- Block 1: Hapus jadwal lama (abaikan error jika belum ada)
+    BEGIN
+        PERFORM cron.unschedule('hourly-smart-global-reset');
+    EXCEPTION WHEN OTHERS THEN
+        NULL; -- Abaikan jika job belum terdaftar
+    END;
+
+    -- Block 2: Daftarkan jadwal baru (SELALU dieksekusi)
+    PERFORM cron.schedule(
+        'hourly-smart-global-reset',
+        '0 * * * *',
+        'SELECT public.handle_smart_global_reset()'
+    );
 END $$;
 
 -- =================================================================================

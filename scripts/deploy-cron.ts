@@ -113,6 +113,30 @@ async function main() {
   `);
 
   console.log("✅ Cron function updated successfully!");
+
+  // Deploy cron schedule
+  console.log("⏰ Scheduling hourly cron job...");
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+        BEGIN
+            PERFORM cron.unschedule('hourly-smart-global-reset');
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+        PERFORM cron.schedule(
+            'hourly-smart-global-reset',
+            '0 * * * *',
+            'SELECT public.handle_smart_global_reset()'
+        );
+    END $$;
+  `);
+  console.log("✅ Cron schedule registered: runs every hour at :00");
+
+  // Verify
+  const jobs = await prisma.$queryRawUnsafe(`SELECT jobid, jobname, schedule FROM cron.job WHERE jobname = 'hourly-smart-global-reset'`);
+  console.log("📋 Registered cron jobs:", jobs);
+
   await prisma.$disconnect();
 }
 

@@ -1,21 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Bell, ShieldPlus, Menu } from "lucide-react";
+import { Search, Bell, ShieldPlus } from "lucide-react";
 import { formatTime } from "@/lib/utils";
-
 import { cn } from "@/lib/utils";
+
+/**
+ * Menghitung sisa waktu sampai jam 00:00 WIB (Asia/Jakarta) berikutnya.
+ * Returns { hours, minutes, seconds }
+ */
+function getTimeUntilMidnightJakarta(): { hours: number; minutes: number; seconds: number; totalSeconds: number } {
+  // Ambil waktu "sekarang" dalam zona Jakarta
+  const now = new Date();
+  const jakartaStr = now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+  const jakartaNow = new Date(jakartaStr);
+
+  // Hitung target: hari ini jam 00:00+1 hari (midnight berikutnya)
+  const midnight = new Date(jakartaNow);
+  midnight.setDate(midnight.getDate() + 1);
+  midnight.setHours(0, 0, 0, 0);
+
+  const diffMs = midnight.getTime() - jakartaNow.getTime();
+  const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return { hours, minutes, seconds, totalSeconds };
+}
 
 export function TopBar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boolean; setIsDesktopOpen: (val: boolean) => void }) {
   const [time, setTime] = useState("");
+  const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
 
   useEffect(() => {
+    // Initial set
     setTime(formatTime(new Date()));
+    setCountdown(getTimeUntilMidnightJakarta());
+
     const interval = setInterval(() => {
       setTime(formatTime(new Date()));
+      setCountdown(getTimeUntilMidnightJakarta());
     }, 1000);
+
     return () => clearInterval(interval);
   }, []);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const countdownStr = `${pad(countdown.hours)}:${pad(countdown.minutes)}:${pad(countdown.seconds)}`;
+
+  // Warna berubah semakin dekat ke midnight
+  const isUrgent = countdown.totalSeconds < 3600; // < 1 jam
+  const isCritical = countdown.totalSeconds < 600; // < 10 menit
 
   return (
     <header className={cn(
@@ -33,12 +70,29 @@ export function TopBar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boo
         </button>
         <span className="text-primary font-headline font-black text-xl tracking-widest">BIT MOVE</span>
         <span className="h-4 w-[2px] bg-outline-variant"></span>
-        <span className="flex items-center gap-2 font-headline font-bold text-xs text-on-surface-variant uppercase tracking-tighter">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse-fast"></span>
-          SYSTEM STATUS: OPTIMAL
+
+        {/* Countdown Timer to Daily Reset */}
+        <span className="flex items-center gap-2 font-headline font-bold text-xs uppercase tracking-tighter">
+          <span className={cn(
+            "w-2 h-2 rounded-full",
+            isCritical ? "bg-error animate-pulse" : isUrgent ? "bg-tertiary animate-pulse-fast" : "bg-primary animate-pulse-fast"
+          )}></span>
+          <span className={cn(
+            "transition-colors",
+            isCritical ? "text-error" : isUrgent ? "text-tertiary" : "text-on-surface-variant"
+          )}>
+            DAILY RESET:
+          </span>
+          <span className={cn(
+            "font-black tracking-widest tabular-nums min-w-[72px]",
+            isCritical ? "text-error" : isUrgent ? "text-tertiary" : "text-secondary"
+          )}>
+            {countdownStr}
+          </span>
         </span>
+
         <span className="h-4 w-[2px] bg-outline-variant ml-2"></span>
-        <span className="font-headline font-bold text-xs text-secondary uppercase tracking-widest min-w-[100px]">
+        <span className="font-headline font-bold text-xs text-on-surface-variant uppercase tracking-widest min-w-[100px]">
           {time}
         </span>
       </div>
