@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Bell, ShieldPlus } from "lucide-react";
+import { Search, Bell, ShieldPlus, Flame } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ function getTimeUntilMidnightJakarta(): { hours: number; minutes: number; second
   return { hours, minutes, seconds, totalSeconds };
 }
 
-export function TopBar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boolean; setIsDesktopOpen: (val: boolean) => void }) {
+export function TopBar({ isDesktopOpen, setIsDesktopOpen, streak = 0 }: { isDesktopOpen: boolean; setIsDesktopOpen: (val: boolean) => void; streak?: number }) {
   const [time, setTime] = useState("");
   const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
 
@@ -98,15 +98,11 @@ export function TopBar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: boo
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="relative flex items-center bg-surface-container-high px-3 py-1 border border-outline-variant/30 focus-within:border-primary transition-colors">
-          <Search className="w-4 h-4 text-primary mr-2" />
-          <input
-            className="bg-transparent border-none text-[10px] font-headline uppercase outline-none focus:ring-0 w-48 text-white placeholder-on-surface-variant"
-            placeholder="QUERY DATABASE..."
-            type="text"
-          />
-        </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <div className="flex items-center gap-2 font-headline font-black text-secondary bg-surface-container-high px-3 py-1 border border-outline-variant/30 tooltip-trigger" title="Current Daily Streak">
+            <Flame className="w-4 h-4 text-orange-500" />
+            <span className="text-sm mt-0.5">{streak} Days</span>
+          </div>
           <Bell className="w-5 h-5 text-on-surface-variant hover:text-secondary cursor-pointer transition-transform" />
           <ShieldPlus className="w-5 h-5 text-on-surface-variant hover:text-secondary cursor-pointer transition-transform" />
         </div>

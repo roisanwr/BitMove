@@ -24,6 +24,8 @@ export async function toggleTask(taskId: string, isCompleted: boolean, priority:
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Mark task complete
+      // DB Trigger "on_task_completion" will automatically create a point_log,
+      // and "on_log_added" will automatically update user profiles (XP/Points).
       await tx.tasks.update({
         where: { id: taskId, user_id: userId },
         data: { 
@@ -32,22 +34,6 @@ export async function toggleTask(taskId: string, isCompleted: boolean, priority:
           current_value: 1
         }
       });
-
-      // 2. Add point log
-      await tx.point_logs.create({
-        data: {
-          user_id: userId,
-          xp_change: xpReward,
-          points_change: pointsReward,
-          source_type: "Task Completion",
-          description: `Completed task ${taskId}`
-        }
-      });
-
-      // 3. Update profile totals (this is also handled by DB trigger process_game_stats, 
-      //    but our manual update might conflict or duplicate if trigger is active. 
-      //    Wait! db.sql has a trigger: "AFTER INSERT ON public.point_logs FOR EACH ROW EXECUTE FUNCTION public.process_game_stats()")
-      // Therefore, we only need to insert into point_logs. The trigger will automatically update the profiles table!
     });
   }
 
@@ -126,4 +112,18 @@ export async function createTaskFromLibrary(libraryId: string) {
 
   revalidatePath("/quests");
   return { success: true };
+}
+
+export async function deleteTask(taskId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await prisma.tasks.delete({
+    where: {
+      id: taskId,
+      user_id: session.user.id
+    }
+  });
+
+  revalidatePath("/quests");
 }

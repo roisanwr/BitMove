@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Check, Plus, Clock, Target, AlertTriangle } from "lucide-react";
+import { Check, Plus, Clock, Target, AlertTriangle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toggleTask } from "./actions";
+import { toggleTask, deleteTask } from "./actions";
 
 export function QuestList({ initialTasks }: { initialTasks: any[] }) {
   const [tasks, setTasks] = useState(initialTasks);
@@ -24,8 +24,29 @@ export function QuestList({ initialTasks }: { initialTasks: any[] }) {
     });
   };
 
-  const dailyTasks = tasks.filter((t) => t.frequency === "Daily");
-  const weeklyTasks = tasks.filter((t) => t.frequency === "Weekly");
+  const handleDelete = (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this directive?")) return;
+    
+    // Optimistic UI update
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    startTransition(async () => {
+      await deleteTask(taskId);
+    });
+  };
+
+  const priorityOrder: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+
+  const processTasks = (taskList: any[]) => {
+    return [...taskList].sort((a, b) => {
+      if (a.is_completed !== b.is_completed) return a.is_completed ? 1 : -1;
+      return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+    });
+  };
+
+  const dailyTasks = processTasks(tasks.filter((t) => t.frequency === "Daily"));
+  const weeklyTasks = processTasks(tasks.filter((t) => t.frequency === "Weekly"));
 
   const TaskItem = ({ task }: { task: any }) => {
     const isCompleted = task.is_completed;
@@ -77,12 +98,23 @@ export function QuestList({ initialTasks }: { initialTasks: any[] }) {
           </div>
         </div>
         
-        <span className={cn(
-          "font-headline font-black text-sm",
-          isCompleted ? "text-on-surface-variant" : "text-primary"
-        )}>
-          +{xpReward} XP
-        </span>
+        
+        <div className="flex items-center gap-3">
+          <span className={cn(
+            "font-headline font-black text-sm",
+            isCompleted ? "text-on-surface-variant" : "text-primary"
+          )}>
+            +{xpReward} XP
+          </span>
+          <button 
+            onClick={(e) => handleDelete(task.id, e)}
+            disabled={isPending}
+            className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors rounded-sm opacity-0 group-hover:opacity-100"
+            title="Delete Directive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   };

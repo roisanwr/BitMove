@@ -160,10 +160,18 @@ export function CreateQuestForm({ library }: Props) {
                       Category
                     </label>
                     <select name="category" className="w-full bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-sm focus:border-primary focus:outline-none transition-colors appearance-none">
-                      <option value="Training">Training</option>
-                      <option value="Nutrition">Nutrition</option>
-                      <option value="Intelligence">Intelligence (Study)</option>
-                      <option value="Recovery">Recovery</option>
+                      {Object.keys(grouped).length > 0 ? (
+                        Object.keys(grouped).sort().map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Intellect">Intellect</option>
+                          <option value="Vitality">Vitality</option>
+                          <option value="Wealth">Wealth</option>
+                          <option value="Charisma">Charisma</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
