@@ -59,7 +59,9 @@ async function main() {
                        (COUNT(CASE WHEN t.is_completed THEN 1 END) + COALESCE(wact.has_workout, 0))::float / 
                        NULLIF(COUNT(t.id) + COALESCE(sched.has_schedule, 0), 0)::float, 
                        0.0
-                   ) as completion_rate
+                   ) as completion_rate,
+                   COALESCE(sched.has_schedule, 0) as has_schedule,
+                   COALESCE(wact.has_workout, 0) as has_workout
             FROM temp_users_to_reset u
             LEFT JOIN public.tasks t ON t.user_id = u.id AND t.frequency = 'Daily'
             -- Cek apakah user punya jadwal workout di hari sebelum reset (kemarin)
@@ -67,11 +69,11 @@ async function main() {
                 SELECT 1 as has_schedule
                 FROM public.training_programs tp
                 JOIN public.program_schedules ps ON ps.program_id = tp.id
-                    AND ps.day_of_week = EXTRACT(ISODOW FROM (now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+                    AND ps.day_of_week = EXTRACT(ISODOW FROM ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day'))
                     AND ps.week_number = (
                         FLOOR(
                             EXTRACT(DAY FROM (
-                                ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1) - tp.start_date
+                                ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day') - tp.start_date::timestamp
                             ))::numeric / 7
                         )::int % tp.total_weeks
                     ) + 1
@@ -85,7 +87,7 @@ async function main() {
                 WHERE w.user_id = u.id
                   AND w.status = 'completed'
                   AND (w.ended_at AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date = 
-                      ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+                      ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day')::date
                 LIMIT 1
             ) wact ON true
             GROUP BY u.id, u.streak_current, u.streak_max, u.last_active_date, u.timezone, sched.has_schedule, wact.has_workout;
@@ -100,7 +102,7 @@ async function main() {
             UPDATE public.profiles p
             SET 
                 streak_current = CASE 
-                    WHEN stats.last_active_date < ((now() AT TIME ZONE coalesce(stats.timezone, 'Asia/Jakarta'))::date - 1) THEN 0
+                    WHEN stats.last_active_date < ((now() AT TIME ZONE coalesce(stats.timezone, 'Asia/Jakarta'))::date - interval '1 day')::date THEN 0
                     WHEN stats.total_items > 0 AND stats.completion_rate >= 0.8 THEN stats.streak_current + 1 
                     WHEN stats.total_items > 0 AND stats.completion_rate < 0.8 THEN 0
                     ELSE stats.streak_current END, -- Pause logic jika total_items = 0
@@ -123,7 +125,7 @@ async function main() {
             INSERT INTO public.point_logs (user_id, xp_change, points_change, source_type, description)
             SELECT DISTINCT user_id, -150, -50, 'punishment', 'Missed Scheduled Workout! Pemalas! 😤'
             FROM temp_user_stats
-            WHERE has_schedule = 1 AND COALESCE(has_workout, 0) = 0;
+            WHERE has_schedule = 1 AND has_workout = 0;
 
         END IF;
 

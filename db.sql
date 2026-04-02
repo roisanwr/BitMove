@@ -318,7 +318,9 @@ BEGIN
                    (COUNT(CASE WHEN t.is_completed THEN 1 END) + COALESCE(wact.has_workout, 0))::float / 
                    NULLIF(COUNT(t.id) + COALESCE(sched.has_schedule, 0), 0)::float, 
                    0.0
-               ) as completion_rate
+               ) as completion_rate,
+               COALESCE(sched.has_schedule, 0) as has_schedule,
+               COALESCE(wact.has_workout, 0) as has_workout
         FROM temp_users_to_reset u
         LEFT JOIN public.tasks t ON t.user_id = u.id AND t.frequency = 'Daily'
         -- Cek apakah user punya jadwal workout di hari sebelum reset (kemarin)
@@ -326,11 +328,11 @@ BEGIN
             SELECT 1 as has_schedule
             FROM public.training_programs tp
             JOIN public.program_schedules ps ON ps.program_id = tp.id
-                AND ps.day_of_week = EXTRACT(ISODOW FROM (now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+                AND ps.day_of_week = EXTRACT(ISODOW FROM ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day'))
                 AND ps.week_number = (
                     FLOOR(
                         EXTRACT(DAY FROM (
-                            ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1) - tp.start_date
+                            ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day') - tp.start_date::timestamp
                         ))::numeric / 7
                     )::int % tp.total_weeks
                 ) + 1
@@ -344,7 +346,7 @@ BEGIN
             WHERE w.user_id = u.id
               AND w.status = 'completed'
               AND (w.ended_at AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date = 
-                  ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - 1)
+                  ((now() AT TIME ZONE coalesce(u.timezone, 'Asia/Jakarta'))::date - interval '1 day')::date
             LIMIT 1
         ) wact ON true
         GROUP BY u.id, u.streak_current, u.streak_max, u.last_active_date, u.timezone, sched.has_schedule, wact.has_workout;
