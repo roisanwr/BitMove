@@ -39,7 +39,7 @@ export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: bo
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-[#000000]/90 backdrop-blur-md border-b-2 border-primary z-50 flex items-center justify-between px-4">
-        <span className="text-primary font-headline font-black text-lg tracking-widest">CMD CENTER</span>
+        <span className="font-headline font-bold text-lg tracking-widest text-primary">BitMove</span>
         <button onClick={() => setIsOpen(!isOpen)} className="text-primary p-2">
           <span className="material-symbols-outlined">{isOpen ? "close" : "menu"}</span>
         </button>
@@ -54,8 +54,15 @@ export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: bo
         )}
       >
         <div className="p-6 pt-20 md:pt-6">
-          <div className="text-2xl font-black tracking-tiled text-primary italic font-headline mb-1">COMMAND CENTER</div>
-          <div className="font-headline font-bold uppercase text-[10px] tracking-widest text-on-surface-variant mb-8">RANK: ELITE OPERATIVE</div>
+          {/* BitMove Logo */}
+          <div className="mb-8">
+            <div className="flex items-baseline gap-1 mb-0.5">
+              <span className="font-headline font-bold text-3xl tracking-tight text-white leading-none">Bit</span>
+              <span className="font-headline font-bold text-3xl tracking-tight text-primary leading-none">Move</span>
+            </div>
+            <div className="h-[2px] w-full bg-gradient-to-r from-primary via-secondary to-transparent mt-1 mb-2" />
+            <div className="font-body text-[10px] uppercase tracking-[0.2em] text-on-surface-variant">Gamified Self-Mastery</div>
+          </div>
           <nav className="space-y-2">
             {navItems.map((item) => {
               if (item.subItems) {

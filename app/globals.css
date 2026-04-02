@@ -23,8 +23,9 @@
   --color-primary-container: #2ff801;
   --color-primary-dim: #2be800;
 
-  --font-headline: "Space Grotesk", sans-serif;
+  --font-headline: "Rajdhani", "Barlow Condensed", sans-serif;
   --font-body: "Inter", sans-serif;
+  --font-display: "Barlow Condensed", sans-serif;
 
   --animate-glitch: glitch 0.2s linear infinite;
   --animate-pulse-fast: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
