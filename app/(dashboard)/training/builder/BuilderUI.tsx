@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Plus, X, Zap, ChevronRight, Trash2 } from "lucide-react";
 import { saveAndActivateProgram, SlotInput } from "./actions";
 import { tier_enum } from "@prisma/client";
@@ -35,6 +35,7 @@ interface ExerciseItem {
 
 interface Props {
   exercises: ExerciseItem[];
+  initialProgram?: any;
 }
 
 interface SlotState {
@@ -43,7 +44,7 @@ interface SlotState {
   targetTier: tier_enum;
 }
 
-export function BuilderUI({ exercises }: Props) {
+export function BuilderUI({ exercises, initialProgram }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState("");
@@ -58,6 +59,27 @@ export function BuilderUI({ exercises }: Props) {
   const [exSearch, setExSearch] = useState("");
 
   const slotKey = (week: number, day: number) => `${week}-${day}`;
+
+  useEffect(() => {
+    if (initialProgram) {
+      setTitle(initialProgram.title);
+      setTotalWeeks(initialProgram.total_weeks);
+      
+      const parsedSlots: Record<string, SlotState[]> = {};
+      if (initialProgram.program_schedules) {
+        initialProgram.program_schedules.forEach((s: any) => {
+          const key = `${s.week_number}-${s.day_of_week}`;
+          if (!parsedSlots[key]) parsedSlots[key] = [];
+          parsedSlots[key].push({
+            exerciseId: s.exercise_id,
+            exerciseName: s.exercise_library?.name || "Unknown",
+            targetTier: s.target_tier,
+          });
+        });
+      }
+      setSlots(parsedSlots);
+    }
+  }, [initialProgram]);
 
   const openModal = (week: number, day: number) => {
     setModal({ week, day });
@@ -113,7 +135,7 @@ export function BuilderUI({ exercises }: Props) {
     }
 
     startTransition(async () => {
-      await saveAndActivateProgram(title, totalWeeks, allSlots);
+      await saveAndActivateProgram(title, totalWeeks, allSlots, initialProgram?.id);
       router.push("/training");
     });
   };
@@ -257,7 +279,7 @@ export function BuilderUI({ exercises }: Props) {
           className="bg-secondary text-black font-headline font-black py-4 px-10 uppercase tracking-widest flex items-center gap-3 hover:shadow-[0_0_25px_rgba(213,117,255,0.6)] transition-all disabled:opacity-50 glitch-effect"
         >
           <Zap className="w-5 h-5 fill-current" />
-          {isPending ? "DEPLOYING..." : "AKTIFKAN PROGRAM"}
+          {isPending ? "DEPLOYING..." : (initialProgram ? "SIMPAN & AKTIFKAN PROGRAM" : "AKTIFKAN PROGRAM")}
         </button>
       </div>
 

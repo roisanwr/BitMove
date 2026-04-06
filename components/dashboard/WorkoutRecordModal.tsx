@@ -95,39 +95,41 @@ export function WorkoutRecordModal({
                 </div>
               )}
               
-              {workoutData.workout_exercises?.map((we: any) => {
-                const totalCompleted = we.sets.reduce((acc: number, set: any) => acc + (set.completed_value || 0), 0);
-                
-                return (
-                  <div 
-                    key={we.id} 
-                    className="flex justify-between items-center p-4 bg-surface-container-high border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-colors group"
-                    onClick={() => setSelectedExercise(we)}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-bold text-white uppercase group-hover:text-primary transition-colors text-sm">
-                        {we.exercises?.name}
-                      </span>
-                      <span className="text-[10px] text-on-surface-variant font-body mt-1 uppercase tracking-widest">
-                        Target: {we.exercises?.target_muscle || 'Full Body'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <div className="text-lg font-black text-white leading-none">
-                          {we.exercises?.measurement_unit === "seconds" 
-                            ? `${Math.floor(totalCompleted / 60)}m ${totalCompleted % 60}s`
-                            : `${totalCompleted} ${we.exercises?.measurement_unit || 'reps'}`}
-                        </div>
-                        <div className="text-[10px] text-on-surface-variant tracking-widest uppercase mt-1">
-                          {we.sets.length} Sets
-                        </div>
+              <div className="max-h-[40vh] overflow-y-auto pr-2 space-y-2 mt-4">
+                {workoutData.workout_exercises?.map((we: any) => {
+                  const totalCompleted = we.sets.reduce((acc: number, set: any) => acc + (set.completed_value || 0), 0);
+                  
+                  return (
+                    <div 
+                      key={we.id} 
+                      className="flex justify-between items-center p-4 bg-surface-container-high border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-colors group"
+                      onClick={() => setSelectedExercise(we)}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-bold text-white uppercase group-hover:text-primary transition-colors text-sm">
+                          {we.exercises?.name}
+                        </span>
+                        <span className="text-[10px] text-on-surface-variant font-body mt-1 uppercase tracking-widest">
+                          Target: {we.exercises?.target_muscle || 'Full Body'}
+                        </span>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-on-surface-variant group-hover:text-white transition-transform group-hover:translate-x-1" />
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-lg font-black text-white leading-none">
+                            {we.exercises?.measurement_unit === "seconds" 
+                              ? `${Math.floor(totalCompleted / 60)}m ${totalCompleted % 60}s`
+                              : `${totalCompleted} ${we.exercises?.measurement_unit || 'reps'}`}
+                          </div>
+                          <div className="text-[10px] text-on-surface-variant tracking-widest uppercase mt-1">
+                            {we.sets.length} Sets
+                          </div>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-on-surface-variant group-hover:text-white transition-transform group-hover:translate-x-1" />
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}

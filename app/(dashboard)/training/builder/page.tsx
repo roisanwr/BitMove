@@ -1,25 +1,30 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { BuilderUI } from "./BuilderUI";
-import { getProgramsForUser } from "@/lib/services/programService";
-import { removeProgramAction } from "./actions";
-import { Trash2, ArrowLeft } from "lucide-react";
+import { getProgramsForUser, getProgramById } from "@/lib/services/programService";
+import { removeProgramAction, setActiveProgramAction } from "./actions";
+import { Trash2, ArrowLeft, Pencil, Zap } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
   title: "PROGRAM BUILDER | BITMOVE",
 };
 
-export default async function BuilderPage() {
+export default async function BuilderPage({
+  searchParams,
+}: {
+  searchParams: { edit?: string };
+}) {
   const session = await auth();
   if (!session?.user?.id) return <div>Unauthorized Access.</div>;
 
-  const [exercises, programs] = await Promise.all([
+  const [exercises, programs, initialProgram] = await Promise.all([
     prisma.exercise_library.findMany({
       where: { is_archived: false },
       orderBy: { name: "asc" },
     }),
     getProgramsForUser(session.user.id),
+    searchParams.edit ? getProgramById(searchParams.edit, session.user.id) : Promise.resolve(null),
   ]);
 
   return (
@@ -34,7 +39,7 @@ export default async function BuilderPage() {
         </Link>
       </div>
 
-      <BuilderUI exercises={exercises} />
+      <BuilderUI exercises={exercises} initialProgram={initialProgram} />
 
       {/* Existing Programs */}
       {programs.length > 0 && (
@@ -65,19 +70,44 @@ export default async function BuilderPage() {
                     {p.total_weeks} MINGGU • {p.program_schedules.length} SLOT LATIHAN
                   </p>
                 </div>
-                <form
-                  action={async () => {
-                    "use server";
-                    await removeProgramAction(p.id);
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="text-error/40 hover:text-error transition-colors p-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </form>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/training/builder?edit=${p.id}`}
+                      className="text-on-surface-variant hover:text-white transition-colors p-2"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Link>
+                    {!p.is_active && (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await setActiveProgramAction(p.id);
+                        }}
+                      >
+                        <button
+                          type="submit"
+                          className="text-secondary/70 hover:text-secondary transition-colors p-2"
+                          title="Set as Active Program"
+                        >
+                          <Zap className="w-4 h-4" />
+                        </button>
+                      </form>
+                    )}
+                    <form
+                      action={async () => {
+                        "use server";
+                        await removeProgramAction(p.id);
+                      }}
+                    >
+                      <button
+                        type="submit"
+                        className="text-error/40 hover:text-error transition-colors p-2"
+                        title="Delete Program"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </form>
+                  </div>
               </div>
             ))}
           </div>

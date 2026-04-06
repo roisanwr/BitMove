@@ -160,7 +160,7 @@ async function TodayMissionView({
             </div>
           </div>
           <Link
-            href="/training/builder"
+            href={`/training/builder?edit=${activeProgram.id}`}
             className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-white border border-outline-variant/30 px-3 py-2 hover:border-outline-variant transition-colors"
           >
             Edit
