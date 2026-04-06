@@ -13,10 +13,12 @@ export const metadata = {
 export default async function BuilderPage({
   searchParams,
 }: {
-  searchParams: { edit?: string };
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) return <div>Unauthorized Access.</div>;
+
+  const { edit } = await searchParams;
 
   const [exercises, programs, initialProgram] = await Promise.all([
     prisma.exercise_library.findMany({
@@ -24,7 +26,7 @@ export default async function BuilderPage({
       orderBy: { name: "asc" },
     }),
     getProgramsForUser(session.user.id),
-    searchParams.edit ? getProgramById(searchParams.edit, session.user.id) : Promise.resolve(null),
+    edit ? getProgramById(edit, session.user.id) : Promise.resolve(null),
   ]);
 
   return (
@@ -39,7 +41,7 @@ export default async function BuilderPage({
         </Link>
       </div>
 
-      <BuilderUI exercises={exercises} initialProgram={initialProgram} />
+      <BuilderUI key={initialProgram?.id ?? 'new'} exercises={exercises} initialProgram={initialProgram} />
 
       {/* Existing Programs */}
       {programs.length > 0 && (
