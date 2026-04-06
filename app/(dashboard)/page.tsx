@@ -69,7 +69,8 @@ export default async function DashboardPage() {
       time: timeStr,
       action: l.description || "Unknown Action",
       yield: `${l.xp_change && l.xp_change > 0 ? '+' : ''}${l.xp_change || 0} XP`,
-      isPenalty: l.xp_change && l.xp_change < 0 ? true : false
+      isPenalty: l.xp_change && l.xp_change < 0 ? true : false,
+      sourceType: l.source_type
     };
   });
 

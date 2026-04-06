@@ -2,6 +2,8 @@
 
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { WorkoutRecordModal } from "./WorkoutRecordModal";
 
 type LogEntry = {
   id: string;
@@ -9,6 +11,7 @@ type LogEntry = {
   action: string;
   yield: string;
   isPenalty?: boolean;
+  sourceType?: string | null;
 };
 
 export function MissionLog({ 
@@ -18,6 +21,8 @@ export function MissionLog({
   logs?: LogEntry[];
   credits?: number;
 }) {
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20 md:pb-0">
       <div className="md:col-span-1 bg-surface-container p-6 border-l-4 border-secondary overflow-hidden group hover:shadow-[0_0_20px_rgba(213,117,255,0.15)] transition-shadow flex flex-col">
@@ -72,19 +77,26 @@ export function MissionLog({
                   <td colSpan={3} className="py-8 text-center text-on-surface-variant italic">No recent intel available.</td>
                 </tr>
               ) : (
-                logs.map((log) => (
-                  <tr 
-                    key={log.id} 
-                    className={cn(
-                      "border-b border-outline-variant/10 transition-colors",
-                      log.isPenalty ? "hover:bg-error/10 text-error" : "hover:bg-surface-container-high"
-                    )}
-                  >
+                logs.map((log) => {
+                  const isClickable = log.sourceType === "Training Session" || log.sourceType === "workout";
+                  return (
+                    <tr 
+                      key={log.id} 
+                      className={cn(
+                        "border-b border-outline-variant/10 transition-colors",
+                        isClickable && "cursor-pointer",
+                        log.isPenalty ? "hover:bg-error/10 text-error" : (isClickable ? "hover:bg-primary/10" : "hover:bg-surface-container-high")
+                      )}
+                      onClick={() => isClickable && setSelectedLogId(log.id)}
+                    >
                     <td className={cn("py-4 px-2 font-body", log.isPenalty ? "opacity-80" : "text-on-surface-variant")}>
                       {log.time}
                     </td>
                     <td className={cn("py-4 px-2 uppercase font-bold", !log.isPenalty && "text-white")}>
-                      {log.action}
+                      <div className="flex items-center gap-2">
+                        {log.action}
+                        {isClickable && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-sm tracking-widest ml-1">DETAIL</span>}
+                      </div>
                     </td>
                     <td className={cn(
                       "py-4 px-2 text-right font-black",
@@ -93,12 +105,15 @@ export function MissionLog({
                       {log.yield}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+      
+      <WorkoutRecordModal logId={selectedLogId} onClose={() => setSelectedLogId(null)} />
     </div>
   );
 }
