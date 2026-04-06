@@ -165,6 +165,12 @@ async function TodayMissionView({
           >
             Edit
           </Link>
+          <Link
+            href="/training/builder"
+            className="font-headline font-bold text-[10px] uppercase tracking-widest text-black bg-primary hover:shadow-[0_0_10px_rgba(142,255,113,0.4)] px-3 py-2 transition-all flex items-center gap-1"
+          >
+            + Buat Baru
+          </Link>
         </div>
       </div>
 
