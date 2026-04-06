@@ -4,6 +4,7 @@ import { BuilderUI } from "./BuilderUI";
 import { getProgramsForUser, getProgramById } from "@/lib/services/programService";
 import { removeProgramAction, setActiveProgramAction } from "./actions";
 import { Trash2, ArrowLeft, Pencil, Zap } from "lucide-react";
+import { ProgramActionButtons } from "./ProgramActionButtons";
 import Link from "next/link";
 
 export const metadata = {
@@ -79,36 +80,7 @@ export default async function BuilderPage({
                     >
                       <Pencil className="w-4 h-4" />
                     </Link>
-                    {!p.is_active && (
-                      <form
-                        action={async () => {
-                          "use server";
-                          await setActiveProgramAction(p.id);
-                        }}
-                      >
-                        <button
-                          type="submit"
-                          className="text-secondary/70 hover:text-secondary transition-colors p-2"
-                          title="Set as Active Program"
-                        >
-                          <Zap className="w-4 h-4" />
-                        </button>
-                      </form>
-                    )}
-                    <form
-                      action={async () => {
-                        "use server";
-                        await removeProgramAction(p.id);
-                      }}
-                    >
-                      <button
-                        type="submit"
-                        className="text-error/40 hover:text-error transition-colors p-2"
-                        title="Delete Program"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </form>
+                    <ProgramActionButtons programId={p.id} programTitle={p.title} isActive={p.is_active ?? false} />
                   </div>
               </div>
             ))}

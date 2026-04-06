@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveTierReward, deleteTierReward } from "../actions";
 
 export default function TierRewardsClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -31,11 +33,12 @@ export default function TierRewardsClient({ initialData }: { initialData: any[] 
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (tier: string) => {
-    if (!confirm(`Are you sure you want to delete Tier ${tier} configuration?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setIsLoading(true);
     try {
-      await deleteTierReward(tier);
+      await deleteTierReward(deleteTarget.tier);
+      setDeleteTarget(null);
     } catch (e) {
       alert("Failed to delete.");
     } finally {
@@ -116,7 +119,7 @@ export default function TierRewardsClient({ initialData }: { initialData: any[] 
                     <td className="p-4 text-secondary">+{reward.points_reward.toLocaleString('id-ID')} PTS</td>
                     <td className="p-4 text-right min-w-[120px]">
                       <button onClick={() => openEdit(reward)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
-                      <button onClick={() => handleDelete(reward.tier)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
+                      <button onClick={() => setDeleteTarget(reward)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
                     </td>
                   </tr>
                 ))}
@@ -189,6 +192,15 @@ export default function TierRewardsClient({ initialData }: { initialData: any[] 
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS TIER REWARD"
+        description={<>Apakah kamu yakin ingin menghapus konfigurasi reward untuk <span className="text-white font-bold">Tier {deleteTarget?.tier}</span>?</>}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

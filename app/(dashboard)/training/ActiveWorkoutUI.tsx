@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { PlaySquare, CheckCircle, PlusSquare, ArrowRight, X, Plus } from "lucide-react";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { addExerciseToWorkout, logSet, finishWorkout, createExercise } from "./actions";
 
 import type { workouts, workout_exercises, sets, exercise_library, difficulty_scales } from "@prisma/client";
@@ -27,13 +28,13 @@ export function ActiveWorkoutUI({
   const [isPending, startTransition] = useTransition();
   const [showLib, setShowLib] = useState(false);
   const [showNewEx, setShowNewEx] = useState(false);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const handleFinish = () => {
-    if (confirm("Terminate simulation and upload combat data?")) {
-      startTransition(async () => {
-        await finishWorkout(workout.id);
-      });
-    }
+    startTransition(async () => {
+      await finishWorkout(workout.id);
+      setShowFinishConfirm(false);
+    });
   };
 
   const handleAddSet = (exerciseId: string, formData: FormData) => {
@@ -212,7 +213,7 @@ export function ActiveWorkoutUI({
 
       <div className="mt-12 flex justify-end">
         <button 
-          onClick={handleFinish}
+          onClick={() => setShowFinishConfirm(true)}
           disabled={isPending}
           className="bg-error text-black font-headline font-black uppercase text-sm px-10 py-4 tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_#ff7351] transition-shadow disabled:opacity-50"
         >
@@ -285,6 +286,16 @@ export function ActiveWorkoutUI({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showFinishConfirm}
+        title="SELESAIKAN SESI LATIHAN"
+        description={<>Selesaikan sesi ini dan simpan progress xp kamu?</>}
+        onConfirm={handleFinish}
+        onCancel={() => setShowFinishConfirm(false)}
+        isLoading={isPending}
+        isDestructive={false}
+      />
     </div>
   );
 }

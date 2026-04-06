@@ -2,33 +2,38 @@
 
 import { useState, useTransition } from "react";
 import { ShoppingCart, Plus, Skull } from "lucide-react";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { createReward, redeemReward, deleteReward } from "./actions";
 
 export function MarketClient({ rewards, currentPoints }: { rewards: any[], currentPoints: number }) {
   const [isPending, startTransition] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [redeemTarget, setRedeemTarget] = useState<any>(null);
 
-  const handleRedeem = (id: string, price: number) => {
-    if (currentPoints < price) {
+  const handleRedeemInitiate = (r: any) => {
+    if (currentPoints < r.price) {
         alert("INSUFFICIENT FUNDS. ACQUIRE MORE POINTS.");
         return;
     }
-    if (confirm("Initiate trade protocol? This will deduct points.")) {
-      startTransition(async () => {
-        await redeemReward(id, price);
-        // We could also call deleteReward(id) here if we wanted one-time use,
-        // but for now let's let rewards persist as repeatable purchases unless deleted.
-      });
-    }
+    setRedeemTarget(r);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this listing from the market?")) {
-        startTransition(async () => {
-            await deleteReward(id);
-        });
-    }
-  }
+  const handleRedeemConfirm = () => {
+    if (!redeemTarget) return;
+    startTransition(async () => {
+      await redeemReward(redeemTarget.id, redeemTarget.price);
+      setRedeemTarget(null);
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    startTransition(async () => {
+        await deleteReward(deleteTarget.id);
+        setDeleteTarget(null);
+    });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -76,7 +81,7 @@ export function MarketClient({ rewards, currentPoints }: { rewards: any[], curre
               <div key={r.id} className="bg-surface-container group border border-outline-variant/30 flex flex-col overflow-hidden">
                 <div className="p-6 flex-1 relative">
                   <div className="absolute top-0 right-0 p-3">
-                    <button onClick={() => handleDelete(r.id)} className="text-on-surface-variant hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setDeleteTarget(r)} className="text-on-surface-variant hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                   </div>
@@ -84,7 +89,7 @@ export function MarketClient({ rewards, currentPoints }: { rewards: any[], curre
                   <div className="font-headline font-black text-2xl text-primary">{r.price} <span className="text-sm text-primary/70">PTS</span></div>
                 </div>
                 <button 
-                  onClick={() => handleRedeem(r.id, r.price)}
+                  onClick={() => handleRedeemInitiate(r)}
                   disabled={isPending || (!canAfford && !isPending)}
                   className={`w-full flex items-center justify-center gap-2 py-4 font-headline font-black uppercase tracking-widest text-sm transition-all ${
                     canAfford 
@@ -108,6 +113,25 @@ export function MarketClient({ rewards, currentPoints }: { rewards: any[], curre
              </button>
          </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS LISTING"
+        description={<>Hapus target <span className="text-white font-bold">&quot;{deleteTarget?.title}&quot;</span> dari Market secara permanen?</>}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isPending}
+      />
+
+      <ConfirmModal
+        isOpen={!!redeemTarget}
+        title="TRADE CONFIRMATION"
+        description={<>Setuju untuk menukar <span className="text-primary font-bold">{redeemTarget?.price} PTS</span> untuk <span className="text-white font-bold">{redeemTarget?.title}</span>?</>}
+        onConfirm={handleRedeemConfirm}
+        onCancel={() => setRedeemTarget(null)}
+        isLoading={isPending}
+        isDestructive={false}
+      />
     </div>
   );
 }

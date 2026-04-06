@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveDifficultyScale, deleteDifficultyScale } from "../actions";
 
 export default function DifficultyScalesClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -31,11 +33,12 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (scale_type: string, tier: string) => {
-    if (!confirm(`Are you sure you want to delete ${scale_type} - ${tier}?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setIsLoading(true);
     try {
-      await deleteDifficultyScale(scale_type, tier);
+      await deleteDifficultyScale(deleteTarget.scale_type, deleteTarget.tier);
+      setDeleteTarget(null);
     } catch (e) {
       alert("Failed to delete.");
     } finally {
@@ -128,7 +131,7 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
                       <td className="p-4 text-[#ababab]">{item.target_value}</td>
                       <td className="p-4 text-right min-w-[120px]">
                         <button onClick={() => openEdit(item)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
-                        <button onClick={() => handleDelete(item.scale_type, item.tier)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
+                        <button onClick={() => setDeleteTarget(item)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
                       </td>
                     </tr>
                   ))}
@@ -205,6 +208,15 @@ export default function DifficultyScalesClient({ initialData }: { initialData: a
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS DIFFICULTY SCALE"
+        description={<>Apakah kamu yakin ingin menghapus <span className="text-white font-bold">{deleteTarget?.scale_type} - {deleteTarget?.tier}</span>?</>}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

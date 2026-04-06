@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveLevelRule, deleteLevelRule } from "../actions";
 
 export default function LevelRulesClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -27,11 +29,12 @@ export default function LevelRulesClient({ initialData }: { initialData: any[] }
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (level: number) => {
-    if (!confirm(`Are you sure you want to delete Level ${level}?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setIsLoading(true);
     try {
-      await deleteLevelRule(level);
+      await deleteLevelRule(deleteTarget.level);
+      setDeleteTarget(null);
     } catch (e) {
       alert("Failed to delete. It might be in use.");
     } finally {
@@ -101,7 +104,7 @@ export default function LevelRulesClient({ initialData }: { initialData: any[] }
                     <td className="p-4 text-[#ababab] uppercase">{rule.title || "-"}</td>
                     <td className="p-4 text-right">
                       <button onClick={() => openEdit(rule)} className="text-xs text-on-surface-variant hover:text-white uppercase tracking-widest mr-3">Edit</button>
-                      <button onClick={() => handleDelete(rule.level)} className="text-xs text-on-surface-variant hover:text-error uppercase tracking-widest">Del</button>
+                      <button onClick={() => setDeleteTarget(rule)} className="text-xs text-on-surface-variant hover:text-error uppercase tracking-widest">Del</button>
                     </td>
                   </tr>
                 ))}
@@ -168,6 +171,15 @@ export default function LevelRulesClient({ initialData }: { initialData: any[] }
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS LEVEL RULE"
+        description={<>Apakah kamu yakin ingin menghapus <span className="text-white font-bold">Level {deleteTarget?.level}</span>?</>}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

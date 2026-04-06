@@ -3,10 +3,12 @@
 import { useState, useTransition, useEffect } from "react";
 import { Check, Plus, Clock, Target, AlertTriangle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { toggleTask, deleteTask } from "./actions";
 
 export function QuestList({ initialTasks }: { initialTasks: any[] }) {
   const [tasks, setTasks] = useState(initialTasks);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -24,12 +26,19 @@ export function QuestList({ initialTasks }: { initialTasks: any[] }) {
     });
   };
 
-  const handleDelete = (taskId: string, e: React.MouseEvent) => {
+  const handleDeleteInitiate = (task: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this directive?")) return;
-    
+    setDeleteTarget(task);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+
     // Optimistic UI update
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setTasks((prev) => prev.filter((t) => t.id !== deleteTarget.id));
+    
+    const taskId = deleteTarget.id;
+    setDeleteTarget(null);
 
     startTransition(async () => {
       await deleteTask(taskId);
@@ -107,7 +116,7 @@ export function QuestList({ initialTasks }: { initialTasks: any[] }) {
             +{xpReward} XP
           </span>
           <button 
-            onClick={(e) => handleDelete(task.id, e)}
+            onClick={(e) => handleDeleteInitiate(task, e)}
             disabled={isPending}
             className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors rounded-sm opacity-0 group-hover:opacity-100"
             title="Delete Directive"
@@ -146,6 +155,15 @@ export function QuestList({ initialTasks }: { initialTasks: any[] }) {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS DIREKTIF"
+        description={<>Apakah kamu yakin ingin membatalkan misi <span className="text-white font-bold">&quot;{deleteTarget?.title}&quot;</span>?</>}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isPending}
+      />
     </div>
   );
 }

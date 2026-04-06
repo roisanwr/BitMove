@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveTaskLibrary, deleteTaskLibrary } from "../actions";
 
 export default function TaskLibraryClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -43,11 +45,12 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete task "${title}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setIsLoading(true);
     try {
-      await deleteTaskLibrary(id);
+      await deleteTaskLibrary(deleteTarget.id);
+      setDeleteTarget(null);
     } catch (e) {
       alert("Failed to delete. It might be in use.");
     } finally {
@@ -131,7 +134,7 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
                     </td>
                     <td className="p-4 text-right min-w-[120px]">
                       <button onClick={() => openEdit(t)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
-                      <button onClick={() => handleDelete(t.id, t.title)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
+                      <button onClick={() => setDeleteTarget(t)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
                     </td>
                   </tr>
                 ))}
@@ -240,6 +243,15 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS TASK TEMPLATE"
+        description={<>Apakah kamu yakin ingin menghapus task <span className="text-white font-bold">&quot;{deleteTarget?.title}&quot;</span> secara permanen?</>}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

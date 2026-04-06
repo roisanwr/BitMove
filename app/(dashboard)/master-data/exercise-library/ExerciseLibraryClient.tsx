@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
+import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveExerciseLibrary, deleteExerciseLibrary } from "../actions";
 
 export default function ExerciseLibraryClient({ initialData, userId }: { initialData: any[], userId: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -40,11 +42,12 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete exercise "${name}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setIsLoading(true);
     try {
-      await deleteExerciseLibrary(id);
+      await deleteExerciseLibrary(deleteTarget.id);
+      setDeleteTarget(null);
     } catch (e) {
       alert("Failed to delete. It might be in use by workout schedules.");
     } finally {
@@ -132,7 +135,7 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
                     <td className="p-4 text-xs lowercase text-on-surface-variant">{ex.measurement_unit}</td>
                     <td className="p-4 text-right min-w-[120px]">
                       <button onClick={() => openEdit(ex)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
-                      <button onClick={() => handleDelete(ex.id, ex.name)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
+                      <button onClick={() => setDeleteTarget(ex)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
                     </td>
                   </tr>
                 ))}
@@ -234,6 +237,15 @@ export default function ExerciseLibraryClient({ initialData, userId }: { initial
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="HAPUS EXERCISE"
+        description={<>Apakah kamu yakin ingin menghapus <span className="text-white font-bold">&quot;{deleteTarget?.name}&quot;</span> secara permanen?</>}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
