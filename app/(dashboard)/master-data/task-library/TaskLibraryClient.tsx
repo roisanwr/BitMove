@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/shared/Modal";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { saveTaskLibrary, deleteTaskLibrary } from "../actions";
+import { ShieldAlert, Target } from "lucide-react";
 
 export default function TaskLibraryClient({ initialData }: { initialData: any[] }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,13 +20,14 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
     default_target_value: 1,
     default_unit: "Checklist",
     icon_emoji: "📋",
+    polarity: "POSITIVE",
   });
 
   const openAdd = () => {
     setFormData({ 
       title: "", category: "General", default_priority: "Medium", 
       default_frequency: "Daily", default_target_value: 1, 
-      default_unit: "Checklist", icon_emoji: "📋" 
+      default_unit: "Checklist", icon_emoji: "📋", polarity: "POSITIVE"
     });
     setEditingItem(null);
     setIsModalOpen(true);
@@ -40,6 +42,7 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
       default_target_value: item.default_target_value,
       default_unit: item.default_unit,
       icon_emoji: item.icon_emoji || "📋",
+      polarity: item.polarity ?? "POSITIVE",
     });
     setEditingItem(item);
     setIsModalOpen(true);
@@ -109,35 +112,47 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
                   <th className="p-4 py-6 font-black w-14 text-center">Icon</th>
                   <th className="p-4 py-6 font-black">Title</th>
                   <th className="p-4 py-6 font-black">Category</th>
+                  <th className="p-4 py-6 font-black text-center">Type</th>
                   <th className="p-4 py-6 font-black text-center">Priority</th>
                   <th className="p-4 py-6 font-black text-center">Freq.</th>
                   <th className="p-4 py-6 font-black text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-sm font-bold divide-y divide-outline-variant/20">
-                {initialData.map((t) => (
-                  <tr key={t.id} className="hover:bg-surface-bright transition-colors text-white">
-                    <td className="p-4 text-center text-xl">{t.icon_emoji || "📋"}</td>
-                    <td className="p-4 uppercase text-primary">{t.title}</td>
-                    <td className="p-4 text-[#ababab] uppercase">{t.category}</td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-0.5 text-[9px] tracking-widest uppercase ${
-                        t.default_priority === 'High' ? 'bg-error/20 text-error' : 
-                        t.default_priority === 'Medium' ? 'bg-secondary/20 text-secondary' : 
-                        'bg-surface-container-higher text-on-surface'
-                      }`}>
-                        {t.default_priority}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center text-xs uppercase text-on-surface-variant">
-                      {t.default_frequency}
-                    </td>
-                    <td className="p-4 text-right min-w-[120px]">
-                      <button onClick={() => openEdit(t)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
-                      <button onClick={() => setDeleteTarget(t)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
-                    </td>
-                  </tr>
-                ))}
+                  {initialData.map((t) => (
+                   <tr key={t.id} className="hover:bg-surface-bright transition-colors text-white">
+                     <td className="p-4 text-center text-xl">{t.icon_emoji || "📋"}</td>
+                     <td className="p-4 uppercase text-primary">{t.title}</td>
+                     <td className="p-4 text-[#ababab] uppercase">{t.category}</td>
+                     <td className="p-4 text-center">
+                       {(t.polarity ?? "POSITIVE") === "NEGATIVE" ? (
+                         <span className="px-2 py-0.5 text-[9px] tracking-widest uppercase bg-error/20 text-error flex items-center justify-center gap-1 w-fit mx-auto">
+                           <ShieldAlert className="w-3 h-3" /> FORBIDDEN
+                         </span>
+                       ) : (
+                         <span className="px-2 py-0.5 text-[9px] tracking-widest uppercase bg-primary/20 text-primary flex items-center justify-center gap-1 w-fit mx-auto">
+                           <Target className="w-3 h-3" /> OBJECTIVE
+                         </span>
+                       )}
+                     </td>
+                     <td className="p-4 text-center">
+                       <span className={`px-2 py-0.5 text-[9px] tracking-widest uppercase ${
+                         t.default_priority === 'High' ? 'bg-error/20 text-error' : 
+                         t.default_priority === 'Medium' ? 'bg-secondary/20 text-secondary' : 
+                         'bg-surface-container-higher text-on-surface'
+                       }`}>
+                         {t.default_priority}
+                       </span>
+                     </td>
+                     <td className="p-4 text-center text-xs uppercase text-on-surface-variant">
+                       {t.default_frequency}
+                     </td>
+                     <td className="p-4 text-right min-w-[120px]">
+                       <button onClick={() => openEdit(t)} className="text-[10px] text-on-surface-variant hover:text-white uppercase tracking-widest mr-3 transition-colors">Edit</button>
+                       <button onClick={() => setDeleteTarget(t)} className="text-[10px] text-on-surface-variant hover:text-error uppercase tracking-widest transition-colors">Del</button>
+                     </td>
+                   </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -180,6 +195,33 @@ export default function TaskLibraryClient({ initialData }: { initialData: any[] 
                 className="w-full bg-surface-container-higher border border-outline-variant p-2 text-white font-body focus:border-primary outline-none transition-colors"
                 placeholder="e.g. 🏋️‍♂️"
               />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-2">Task Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, polarity: "POSITIVE"})}
+                  className={`flex items-center justify-center gap-2 py-2.5 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                    formData.polarity === "POSITIVE"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-surface-container-higher border-outline-variant text-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  <Target className="w-4 h-4" /> 🎯 Objective
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({...formData, polarity: "NEGATIVE"})}
+                  className={`flex items-center justify-center gap-2 py-2.5 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                    formData.polarity === "NEGATIVE"
+                      ? "bg-error/20 border-error text-error"
+                      : "bg-surface-container-higher border-outline-variant text-on-surface-variant hover:text-white"
+                  }`}
+                >
+                  <ShieldAlert className="w-4 h-4" /> 🚫 Forbidden
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-headline font-bold uppercase tracking-widest text-on-surface-variant mb-1">Priority</label>

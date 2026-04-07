@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { createTask, createTaskFromLibrary } from "./actions";
-import { Plus, X, BookOpen, PenSquare } from "lucide-react";
+import { Plus, X, BookOpen, PenSquare, ShieldAlert, Target } from "lucide-react";
 import type { task_library } from "@prisma/client";
 
 type Props = {
@@ -14,6 +14,7 @@ export function CreateQuestForm({ library }: Props) {
   const [tab, setTab] = useState<"library" | "custom">("library");
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [polarity, setPolarity] = useState<"POSITIVE" | "NEGATIVE">("POSITIVE");
 
   const handleAddFromLibrary = (libraryId: string) => {
     setFeedback(null);
@@ -28,6 +29,7 @@ export function CreateQuestForm({ library }: Props) {
   };
 
   const handleCustomSubmit = async (formData: FormData) => {
+    formData.set("polarity", polarity);
     await createTask(formData);
     setIsOpen(false);
   };
@@ -44,12 +46,20 @@ export function CreateQuestForm({ library }: Props) {
     );
   }
 
-  // Group library by category
-  const grouped = library.reduce<Record<string, task_library[]>>((acc, item) => {
-    if (!acc[item.category]) acc[item.category] = [];
-    acc[item.category].push(item);
-    return acc;
-  }, {});
+  // Group library by polarity then category
+  const positiveItems = library.filter(i => (i.polarity ?? "POSITIVE") === "POSITIVE");
+  const negativeItems = library.filter(i => i.polarity === "NEGATIVE");
+
+  const groupByCategory = (items: task_library[]) =>
+    items.reduce<Record<string, task_library[]>>((acc, item) => {
+      if (!acc[item.category]) acc[item.category] = [];
+      acc[item.category].push(item);
+      return acc;
+    }, {});
+
+  const positiveGrouped = groupByCategory(positiveItems);
+  const negativeGrouped = groupByCategory(negativeItems);
+  const allGrouped      = groupByCategory(library);
 
   return (
     <>
@@ -101,46 +111,127 @@ export function CreateQuestForm({ library }: Props) {
           {/* Content */}
           <div className="overflow-y-auto flex-1 p-6">
             {tab === "library" ? (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {library.length === 0 ? (
                   <p className="text-center text-on-surface-variant font-headline uppercase tracking-widest text-xs py-8">
                     Task Library masih kosong. Isi dulu dari Master Data!
                   </p>
                 ) : (
-                  Object.entries(grouped).map(([category, items]) => (
-                    <div key={category}>
-                      <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 border-b border-outline-variant/30 pb-1">
-                        {category}
-                      </div>
-                      <div className="space-y-2">
-                        {items.map((item) => (
-                          <button
-                            key={item.id}
-                            disabled={isPending}
-                            onClick={() => handleAddFromLibrary(item.id)}
-                            className="w-full flex items-center justify-between p-4 bg-surface-container-high border border-outline-variant/30 hover:border-primary hover:bg-surface-bright transition-all group text-left"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl">{item.icon_emoji || "📋"}</span>
-                              <div>
-                                <div className="font-headline font-black text-sm uppercase text-white">
-                                  {item.title}
-                                </div>
-                                <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">
-                                  {item.default_frequency} • {item.default_priority} Priority • Target: {item.default_target_value} {item.default_unit}
+                  <>
+                    {/* Positive tasks */}
+                    {Object.entries(positiveGrouped).map(([category, items]) => (
+                      <div key={`pos-${category}`}>
+                        <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant mb-3 border-b border-outline-variant/30 pb-1">
+                          🎯 {category}
+                        </div>
+                        <div className="space-y-2">
+                          {items.map((item) => (
+                            <button
+                              key={item.id}
+                              disabled={isPending}
+                              onClick={() => handleAddFromLibrary(item.id)}
+                              className="w-full flex items-center justify-between p-4 bg-surface-container-high border border-outline-variant/30 hover:border-primary hover:bg-surface-bright transition-all group text-left"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl">{item.icon_emoji || "📋"}</span>
+                                <div>
+                                  <div className="font-headline font-black text-sm uppercase text-white">
+                                    {item.title}
+                                  </div>
+                                  <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">
+                                    {item.default_frequency} • {item.default_priority} Priority
+                                  </div>
                                 </div>
                               </div>
+                              <Plus className="w-4 h-4 text-on-surface-variant group-hover:text-primary shrink-0 transition-colors" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Negative / Forbidden tasks */}
+                    {negativeItems.length > 0 && (
+                      <div>
+                        <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-error mb-3 border-b border-error/30 pb-1 flex items-center gap-2">
+                          <ShieldAlert className="w-3 h-3" /> FORBIDDEN PROTOCOLS
+                        </div>
+                        {Object.entries(negativeGrouped).map(([category, items]) => (
+                          <div key={`neg-${category}`} className="mb-4">
+                            <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+                              {category}
                             </div>
-                            <Plus className="w-4 h-4 text-on-surface-variant group-hover:text-primary shrink-0 transition-colors" />
-                          </button>
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <button
+                                  key={item.id}
+                                  disabled={isPending}
+                                  onClick={() => handleAddFromLibrary(item.id)}
+                                  className="w-full flex items-center justify-between p-4 bg-error/5 border border-error/20 hover:border-error/60 hover:bg-error/10 transition-all group text-left"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl">{item.icon_emoji || "🚫"}</span>
+                                    <div>
+                                      <div className="font-headline font-black text-sm uppercase text-error/90">
+                                        {item.title}
+                                      </div>
+                                      <div className="font-headline font-bold text-[10px] uppercase tracking-widest text-error/50 mt-0.5">
+                                        FORBIDDEN • {item.default_priority} Priority
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Plus className="w-4 h-4 text-error/40 group-hover:text-error shrink-0 transition-colors" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  ))
+                    )}
+                  </>
                 )}
               </div>
             ) : (
               <form action={handleCustomSubmit} className="space-y-4">
+
+                {/* Polarity Toggle */}
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-2">
+                    Directive Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPolarity("POSITIVE")}
+                      className={`flex items-center justify-center gap-2 py-3 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                        polarity === "POSITIVE"
+                          ? "bg-primary/20 border-primary text-primary"
+                          : "bg-surface-container-high border-outline-variant/50 text-on-surface-variant hover:text-white"
+                      }`}
+                    >
+                      <Target className="w-4 h-4" />
+                      🎯 Objective
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPolarity("NEGATIVE")}
+                      className={`flex items-center justify-center gap-2 py-3 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                        polarity === "NEGATIVE"
+                          ? "bg-error/20 border-error text-error"
+                          : "bg-surface-container-high border-outline-variant/50 text-on-surface-variant hover:text-white"
+                      }`}
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      🚫 Forbidden
+                    </button>
+                  </div>
+                  {polarity === "NEGATIVE" && (
+                    <p className="mt-2 text-[10px] text-error/70 font-headline uppercase tracking-widest">
+                      ⚠ Melanggar task ini akan dikenai PENALTI XP &amp; Points.
+                    </p>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">
                     Directive Title
@@ -150,7 +241,7 @@ export function CreateQuestForm({ library }: Props) {
                     name="title"
                     required
                     className="w-full bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-sm focus:border-primary focus:outline-none transition-colors"
-                    placeholder="E.g. Read 10 Pages of SECRETS.md"
+                    placeholder={polarity === "NEGATIVE" ? "E.g. Makan Junkfood" : "E.g. Read 10 Pages"}
                   />
                 </div>
 
@@ -160,8 +251,8 @@ export function CreateQuestForm({ library }: Props) {
                       Category
                     </label>
                     <select name="category" className="w-full bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-sm focus:border-primary focus:outline-none transition-colors appearance-none">
-                      {Object.keys(grouped).length > 0 ? (
-                        Object.keys(grouped).sort().map(cat => (
+                      {Object.keys(allGrouped).length > 0 ? (
+                        Object.keys(allGrouped).sort().map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
                         ))
                       ) : (
@@ -204,9 +295,13 @@ export function CreateQuestForm({ library }: Props) {
 
                 <button
                   type="submit"
-                  className="w-full bg-primary text-black font-black uppercase tracking-widest py-4 mt-2 hover:shadow-[0_0_15px_#8eff71] transition-all"
+                  className={`w-full font-black uppercase tracking-widest py-4 mt-2 transition-all ${
+                    polarity === "NEGATIVE"
+                      ? "bg-error/20 text-error border border-error/50 hover:bg-error/30"
+                      : "bg-primary text-black hover:shadow-[0_0_15px_#8eff71]"
+                  }`}
                 >
-                  INITIALIZE DIRECTIVE
+                  {polarity === "NEGATIVE" ? "⚠ ADD FORBIDDEN PROTOCOL" : "INITIALIZE DIRECTIVE"}
                 </button>
               </form>
             )}
