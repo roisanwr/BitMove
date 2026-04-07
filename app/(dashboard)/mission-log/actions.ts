@@ -64,6 +64,7 @@ export type AnalyticsStats = {
   totalPenalties: number;
   bestDay: { label: string; xp: number } | null;
   avgXpPerDay: number;
+  missedDays: number;
 };
 
 export type AnalyticsData = {
@@ -224,6 +225,7 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
   let totalXp = 0;
   let totalTasks = 0;
   let totalPenalties = 0;
+  let missedDays = 0;
   let bestDay: { label: string; xp: number } | null = null;
 
   for (const key of sortedKeys) {
@@ -245,6 +247,10 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
       penalty: b.penalty,
       other: b.other,
     });
+
+    if (b.xp === 0 && b.quest === 0 && b.training === 0 && b.penalty === 0 && b.other === 0) {
+      missedDays++;
+    }
   }
 
   const avgXpPerDay = days > 0 ? Math.round(totalXp / days) : 0;
@@ -252,6 +258,6 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
   return {
     xpTimeline,
     activityBreakdown,
-    stats: { totalXp, totalTasks, totalPenalties, bestDay, avgXpPerDay },
+    stats: { totalXp, totalTasks, totalPenalties, bestDay, avgXpPerDay, missedDays },
   };
 }

@@ -124,6 +124,18 @@ export function AnalyticsDashboard({ initialData }: Props) {
   const [data, setData] = useState<AnalyticsData>(initialData);
   const [isPending, startTransition] = useTransition();
 
+  // Filter state for Activity Breakdown Bar Chart
+  const [filters, setFilters] = useState<Record<string, boolean>>({
+    quest: true,
+    training: true,
+    penalty: true,
+    other: true,
+  });
+
+  const toggleFilter = (key: string) => {
+    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const handleRangeChange = (range: TimeRange) => {
     if (range === activeRange) return;
     setActiveRange(range);
@@ -186,11 +198,11 @@ export function AnalyticsDashboard({ initialData }: Props) {
             color="#e8d44d"
           />
           <KpiCard
-            label="Penalties Incurred"
+            label="Failures & Misses"
             value={stats.totalPenalties.toString()}
-            sub={stats.totalPenalties === 0 ? "Clean record 💪" : "violations logged"}
+            sub={`${stats.missedDays} missed days`}
             icon={ShieldAlert}
-            color={stats.totalPenalties === 0 ? "#8eff71" : "#ff4444"}
+            color={stats.totalPenalties === 0 && stats.missedDays === 0 ? "#8eff71" : "#ff4444"}
           />
           <KpiCard
             label="Best Day"
@@ -325,29 +337,40 @@ export function AnalyticsDashboard({ initialData }: Props) {
                 />
                 <Tooltip content={<ActivityTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
 
-                <Bar dataKey="quest" stackId="a" fill="#8eff71" radius={[0, 0, 0, 0]} maxBarSize={24} />
-                <Bar dataKey="training" stackId="a" fill="#e8d44d" maxBarSize={24} />
-                <Bar dataKey="other" stackId="a" fill="#444" maxBarSize={24} />
-                <Bar dataKey="penalty" stackId="a" fill="#ff4444" radius={[2, 2, 0, 0]} maxBarSize={24} />
+                {filters.quest && <Bar dataKey="quest" stackId="a" fill="#8eff71" radius={[0, 0, 0, 0]} maxBarSize={24} />}
+                {filters.training && <Bar dataKey="training" stackId="a" fill="#e8d44d" maxBarSize={24} />}
+                {filters.other && <Bar dataKey="other" stackId="a" fill="#444" maxBarSize={24} />}
+                {filters.penalty && <Bar dataKey="penalty" stackId="a" fill="#ff4444" radius={[2, 2, 0, 0]} maxBarSize={24} />}
               </BarChart>
             </ResponsiveContainer>
           )}
 
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-5 mt-3 pl-1">
+          {/* Legend / Interactive Filters */}
+          <div className="flex flex-wrap items-center gap-3 mt-3 pl-1">
             {[
               { key: "quest", label: "Quest / Task", color: "#8eff71" },
               { key: "training", label: "Training", color: "#e8d44d" },
-              { key: "penalty", label: "Penalty", color: "#ff4444" },
+              { key: "penalty", label: "Forbidden Task", color: "#ff4444" },
               { key: "other", label: "Other", color: "#444" },
-            ].map((item) => (
-              <div key={item.key} className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5" style={{ backgroundColor: item.color }} />
-                <span className="font-headline text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  {item.label}
-                </span>
-              </div>
-            ))}
+            ].map((item) => {
+              const active = filters[item.key];
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => toggleFilter(item.key)}
+                  className={`flex items-center gap-2 px-3 py-1.5 border rounded-sm transition-all focus:outline-none focus:ring-1 focus:ring-primary/50 text-left ${
+                    active 
+                      ? "bg-surface-container-high border-transparent shadow-[0_0_8px_rgba(0,0,0,0.5)]" 
+                      : "bg-transparent border-outline-variant/30 opacity-50 hover:bg-surface-container hover:opacity-100"
+                  }`}
+                >
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: active ? item.color : "#555" }} />
+                  <span className={`font-headline text-[10px] uppercase tracking-widest ${active ? "text-on-surface-variant text-white" : "text-[#777]"}`}>
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
