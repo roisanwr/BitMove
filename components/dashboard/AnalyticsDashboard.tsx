@@ -239,7 +239,8 @@ export function AnalyticsDashboard({ initialData }: Props) {
                 <CartesianGrid strokeDasharray="3 6" stroke="#2a2a2a" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontFamily: "var(--font-headline, monospace)", fontSize: 10, fill: "#666", textTransform: "uppercase" }}
+                  tick={{ fontFamily: "var(--font-headline, monospace)", fontSize: 10, fill: "#666" }}
+                  style={{ textTransform: "uppercase" }}
                   tickLine={false}
                   axisLine={false}
                   interval="preserveStartEnd"
@@ -310,7 +311,8 @@ export function AnalyticsDashboard({ initialData }: Props) {
                 <CartesianGrid strokeDasharray="3 6" stroke="#2a2a2a" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontFamily: "var(--font-headline, monospace)", fontSize: 10, fill: "#666", textTransform: "uppercase" }}
+                  tick={{ fontFamily: "var(--font-headline, monospace)", fontSize: 10, fill: "#666" }}
+                  style={{ textTransform: "uppercase" }}
                   tickLine={false}
                   axisLine={false}
                   interval="preserveStartEnd"
