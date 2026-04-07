@@ -21,6 +21,7 @@ type Props = {
 };
 
 const RANGES: { label: string; value: TimeRange }[] = [
+  { label: "1D", value: "1D" },
   { label: "7D", value: "7D" },
   { label: "30D", value: "30D" },
   { label: "90D", value: "90D" },
@@ -121,6 +122,9 @@ function KpiCard({
 // ── Main Component ─────────────────────────────────────────────────────────────
 export function AnalyticsDashboard({ initialData }: Props) {
   const [activeRange, setActiveRange] = useState<TimeRange>("30D");
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
+  );
   const [data, setData] = useState<AnalyticsData>(initialData);
   const [isPending, startTransition] = useTransition();
 
@@ -140,7 +144,17 @@ export function AnalyticsDashboard({ initialData }: Props) {
     if (range === activeRange) return;
     setActiveRange(range);
     startTransition(async () => {
-      const fresh = await getAnalyticsData(range);
+      const fresh = await getAnalyticsData(range, selectedDate);
+      setData(fresh);
+    });
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    if (!newDate) return;
+    setSelectedDate(newDate);
+    startTransition(async () => {
+      const fresh = await getAnalyticsData("1D", newDate);
       setData(fresh);
     });
   };
@@ -162,21 +176,32 @@ export function AnalyticsDashboard({ initialData }: Props) {
         </div>
 
         {/* Range filter */}
-        <div className="flex items-center border border-outline-variant/30 overflow-hidden">
-          {RANGES.map((r) => (
-            <button
-              key={r.value}
-              onClick={() => handleRangeChange(r.value)}
+        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+          {activeRange === "1D" && (
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateChange}
               disabled={isPending}
-              className={`px-4 py-2 font-headline font-black text-xs uppercase tracking-widest transition-all border-r border-outline-variant/30 last:border-r-0 ${
-                activeRange === r.value
-                  ? "bg-primary text-black"
-                  : "text-on-surface-variant hover:text-white hover:bg-surface-container-high"
-              } disabled:opacity-50`}
-            >
-              {r.label}
-            </button>
-          ))}
+              className="bg-surface-container-high border border-outline-variant/30 text-white font-headline text-xs px-3 py-2 focus:outline-none focus:border-primary disabled:opacity-50"
+            />
+          )}
+          <div className="flex items-center border border-outline-variant/30 overflow-hidden">
+            {RANGES.map((r) => (
+              <button
+                key={r.value}
+                onClick={() => handleRangeChange(r.value)}
+                disabled={isPending}
+                className={`px-4 py-2 font-headline font-black text-xs uppercase tracking-widest transition-all border-r border-outline-variant/30 last:border-r-0 ${
+                  activeRange === r.value
+                    ? "bg-primary text-black"
+                    : "text-on-surface-variant hover:text-white hover:bg-surface-container-high"
+                } disabled:opacity-50`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

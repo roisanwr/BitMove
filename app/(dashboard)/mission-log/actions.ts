@@ -42,7 +42,7 @@ export async function getWorkoutFromLog(logId: string) {
 }
 
 // ─── Analytics types ──────────────────────────────────────────────────────────
-export type TimeRange = "7D" | "30D" | "90D" | "1Y";
+export type TimeRange = "1D" | "7D" | "30D" | "90D" | "1Y";
 
 export type XpTimelinePoint = {
   label: string;     // formatted date label untuk X axis
@@ -104,27 +104,40 @@ function classifySource(sourceType: string | null): "quest" | "training" | "pena
 }
 
 // ─── Main analytics server action ────────────────────────────────────────────
-export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData> {
+export async function getAnalyticsData(range: TimeRange, dateStr?: string): Promise<AnalyticsData> {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   const userId = session.user.id;
 
-  // Compute date range
   const now = new Date();
-  const daysMap: Record<TimeRange, number> = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 };
-  const days = daysMap[range];
-  const since = new Date(now);
-  since.setDate(since.getDate() - days + 1);
-  since.setHours(0, 0, 0, 0);
+  let since = new Date(now);
+  let until = new Date(now);
+  let groupBy: "hour" | "day" | "week" = "day";
+  let daysForAvg = 0;
 
-  // Aggregate by day or week
-  const groupBy: "day" | "week" = days > 30 ? "week" : "day";
+  if (range === "1D") {
+    groupBy = "hour";
+    // user provides dateStr in YYYY-MM-DD. 
+    // We treat it as Asia/Jakarta timezone.
+    const selectedDate = dateStr || toWIBDateString(now);
+    since = new Date(`${selectedDate}T00:00:00+07:00`);
+    until = new Date(`${selectedDate}T23:59:59.999+07:00`);
+    daysForAvg = 1;
+  } else {
+    // Compute date range for 7D, 30D, 90D, 1Y
+    const daysMap: Record<string, number> = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 };
+    const days = daysMap[range];
+    since.setDate(since.getDate() - days + 1);
+    since.setHours(0, 0, 0, 0);
+    groupBy = days > 30 ? "week" : "day";
+    daysForAvg = days;
+  }
 
   // Fetch all point_logs in range
   const rawLogs = await prisma.point_logs.findMany({
     where: {
       user_id: userId,
-      created_at: { gte: since },
+      created_at: { gte: since, lte: until },
     },
     select: {
       created_at: true,
@@ -150,33 +163,51 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
 
   const bucketMap = new Map<string, Bucket>();
 
-  // Pre-fill every bucket in range so there are no gaps
-  for (let i = 0; i < days; i++) {
-    const d = new Date(since);
-    d.setDate(since.getDate() + i);
+  if (groupBy === "hour") {
+    // Drop 24 buckets for hour grouping
+    for (let i = 0; i < 24; i++) {
+        const hourLabel = `${i.toString().padStart(2, '0')}:00`;
+        bucketMap.set(hourLabel, {
+            label: hourLabel,
+            xp: 0,
+            quest: 0,
+            training: 0,
+            penalty: 0,
+            other: 0,
+            taskCount: 0,
+            penaltyCount: 0,
+        });
+    }
+  } else {
+    // Pre-fill every bucket in range so there are no gaps
+    for (let i = 0; i < daysForAvg; i++) {
+      const d = new Date(since);
+      d.setDate(since.getDate() + i);
 
-    const isoKey =
-      groupBy === "week"
-        ? (() => {
-            const monday = new Date(d);
-            const dow = monday.getDay();
-            const diff = dow === 0 ? -6 : 1 - dow;
-            monday.setDate(monday.getDate() + diff);
-            return toWIBDateString(monday);
-          })()
-        : toWIBDateString(d);
+      let isoKey = "";
+      if (groupBy === "week") {
+        const wibStr = d.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+        const wibDate = new Date(wibStr + "T00:00:00");
+        const dow = wibDate.getDay();
+        const diff = dow === 0 ? -6 : 1 - dow;
+        wibDate.setDate(wibDate.getDate() + diff);
+        isoKey = wibDate.toLocaleDateString("en-CA");
+      } else {
+        isoKey = toWIBDateString(d);
+      }
 
-    if (!bucketMap.has(isoKey)) {
-      bucketMap.set(isoKey, {
-        label: bucketLabel(d, groupBy),
-        xp: 0,
-        quest: 0,
-        training: 0,
-        penalty: 0,
-        other: 0,
-        taskCount: 0,
-        penaltyCount: 0,
-      });
+      if (!bucketMap.has(isoKey)) {
+        bucketMap.set(isoKey, {
+          label: bucketLabel(d, groupBy),
+          xp: 0,
+          quest: 0,
+          training: 0,
+          penalty: 0,
+          other: 0,
+          taskCount: 0,
+          penaltyCount: 0,
+        });
+      }
     }
   }
 
@@ -187,11 +218,12 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
     const d = new Date(log.created_at);
     let isoKey: string;
 
-    if (groupBy === "week") {
-      const monday = new Date(d);
-      const tz = "Asia/Jakarta";
-      // Convert to WIB date, get day of week
-      const wibStr = d.toLocaleDateString("en-CA", { timeZone: tz });
+    if (groupBy === "hour") {
+      const wibTime = d.toLocaleTimeString("en-GB", { timeZone: "Asia/Jakarta" }); // HH:MM:SS
+      const hour = wibTime.split(":")[0];
+      isoKey = `${hour}:00`;
+    } else if (groupBy === "week") {
+      const wibStr = d.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
       const wibDate = new Date(wibStr + "T00:00:00");
       const dow = wibDate.getDay();
       const diff = dow === 0 ? -6 : 1 - dow;
@@ -253,7 +285,7 @@ export async function getAnalyticsData(range: TimeRange): Promise<AnalyticsData>
     }
   }
 
-  const avgXpPerDay = days > 0 ? Math.round(totalXp / days) : 0;
+  const avgXpPerDay = daysForAvg > 0 ? Math.round(totalXp / daysForAvg) : 0;
 
   return {
     xpTimeline,
