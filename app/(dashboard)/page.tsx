@@ -48,8 +48,11 @@ export default async function DashboardPage() {
       id: t.id,
       title: t.title,
       priority: (t.priority?.toUpperCase() || "NORMAL") as "OMEGA" | "HIGH" | "NORMAL",
-      xpGain: t.priority === "High" ? 150 : t.priority === "Medium" ? 75 : 30,
-      completed: false
+      xpGain: t.priority === "High" ? 50 : t.priority === "Medium" ? 30 : 10,
+      completed: false,
+      unit: t.unit ?? "Checklist",
+      current_value: t.current_value ?? 0,
+      target_value: t.target_value ?? 1,
     }));
 
   // 3. Fetch Mission Logs (Last 5)

@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { createTask, createTaskFromLibrary } from "./actions";
-import { Plus, X, BookOpen, PenSquare, ShieldAlert, Target } from "lucide-react";
+import { Plus, X, BookOpen, PenSquare, ShieldAlert, Target, TrendingUp, CheckSquare } from "lucide-react";
 import type { task_library } from "@prisma/client";
 
 type Props = {
@@ -14,6 +14,7 @@ export function CreateQuestForm({ library }: Props) {
   const [tab, setTab] = useState<"library" | "custom">("library");
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [taskMode, setTaskMode] = useState<"checklist" | "numeric">("checklist");
   const [polarity, setPolarity] = useState<"POSITIVE" | "NEGATIVE">("POSITIVE");
 
   const handleAddFromLibrary = (libraryId: string) => {
@@ -30,7 +31,13 @@ export function CreateQuestForm({ library }: Props) {
 
   const handleCustomSubmit = async (formData: FormData) => {
     formData.set("polarity", polarity);
+    // unit is already in the form; inject if checklist mode
+    if (taskMode === "checklist") {
+      formData.set("unit", "Checklist");
+      formData.set("target_value", "1");
+    }
     await createTask(formData);
+    setTaskMode("checklist");
     setIsOpen(false);
   };
 
@@ -232,6 +239,46 @@ export function CreateQuestForm({ library }: Props) {
                   )}
                 </div>
 
+                {/* ── Task Mode Toggle (Checklist vs Numeric) — only for POSITIVE ── */}
+                {polarity === "POSITIVE" && (
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-2">
+                      Completion Mode
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTaskMode("checklist")}
+                        className={`flex items-center justify-center gap-2 py-3 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                          taskMode === "checklist"
+                            ? "bg-primary/20 border-primary text-primary"
+                            : "bg-surface-container-high border-outline-variant/50 text-on-surface-variant hover:text-white"
+                        }`}
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                        Checklist
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTaskMode("numeric")}
+                        className={`flex items-center justify-center gap-2 py-3 border font-headline font-black text-xs uppercase tracking-widest transition-all ${
+                          taskMode === "numeric"
+                            ? "bg-secondary/20 border-secondary text-secondary"
+                            : "bg-surface-container-high border-outline-variant/50 text-on-surface-variant hover:text-white"
+                        }`}
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        Numeric
+                      </button>
+                    </div>
+                    {taskMode === "numeric" && (
+                      <p className="mt-2 text-[10px] text-secondary/70 font-headline uppercase tracking-widest">
+                        📊 User akan log progres angka setiap hari (cth: 5 dari 10 Halaman).
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">
                     Directive Title
@@ -276,6 +323,39 @@ export function CreateQuestForm({ library }: Props) {
                     </select>
                   </div>
                 </div>
+
+                {/* ── Numeric Target + Unit ── */}
+                {polarity === "POSITIVE" && taskMode === "numeric" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">
+                        Target Harian
+                      </label>
+                      <input
+                        type="number"
+                        name="target_value"
+                        min={1}
+                        defaultValue={10}
+                        required
+                        className="w-full bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-sm focus:border-secondary focus:outline-none transition-colors font-mono"
+                        placeholder="10"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">
+                        Satuan
+                      </label>
+                      <input
+                        type="text"
+                        name="unit"
+                        defaultValue="Halaman"
+                        required
+                        className="w-full bg-surface-container-high border border-outline-variant/50 px-4 py-3 text-sm focus:border-secondary focus:outline-none transition-colors"
+                        placeholder="Halaman / Menit / reps"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">

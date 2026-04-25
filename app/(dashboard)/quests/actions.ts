@@ -20,7 +20,7 @@ export async function toggleTask(
     // Undo — un-complete task (dev utility)
     await prisma.tasks.update({
       where: { id: taskId, user_id: userId },
-      data: { is_completed: false }
+      data: { is_completed: false, current_value: 0 }
     });
   } else if (polarity === "NEGATIVE") {
     // Task negatif: user menekan = melanggar pantangan → PENALTI
@@ -59,7 +59,7 @@ export async function toggleTask(
       `;
     });
   } else {
-    // Task positif: tandai selesai → dapat reward XP via DB trigger
+    // Task positif checklist: tandai selesai → XP via DB trigger
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.tasks.update({
         where: { id: taskId, user_id: userId },
@@ -75,15 +75,64 @@ export async function toggleTask(
   revalidatePath("/quests");
 }
 
+/**
+ * Update progress untuk task bertipe Numeric (unit !== "Checklist").
+ * DB trigger `on_task_completion` akan otomatis memberi XP reward saat
+ * is_completed berubah false → true.
+ */
+export async function updateTaskProgress(
+  taskId: string,
+  addValue: number,
+  targetValue: number
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = session.user.id;
+
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // 1. Fetch current state
+    const task = await tx.tasks.findUnique({
+      where: { id: taskId, user_id: userId },
+      select: { current_value: true, is_completed: true }
+    });
+    if (!task) throw new Error("Task not found");
+
+    const prevValue    = task.current_value ?? 0;
+    const prevCompleted = task.is_completed ?? false;
+
+    // Clamp: tidak boleh < 0, tidak boleh > target
+    const newValue     = Math.max(0, Math.min(prevValue + addValue, targetValue));
+    const newCompleted = newValue >= targetValue;
+
+    await tx.tasks.update({
+      where: { id: taskId, user_id: userId },
+      data: {
+        current_value:    newValue,
+        is_completed:     newCompleted,
+        // Catat waktu selesai saat pertama kali complete; hapus jika di-undo
+        last_completed_at: newCompleted && !prevCompleted ? new Date() : (!newCompleted ? null : undefined),
+      }
+    });
+    // XP reward ditangani otomatis oleh DB trigger on_task_completion
+    // yang fire pada AFTER UPDATE OF is_completed
+  });
+
+  revalidatePath("/quests");
+}
+
 export async function createTask(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  const title    = formData.get("title") as string;
-  const category = (formData.get("category") as string) || "General";
-  const priority = (formData.get("priority") as any) || "Medium";
+  const title     = formData.get("title") as string;
+  const category  = (formData.get("category") as string) || "General";
+  const priority  = (formData.get("priority") as any) || "Medium";
   const frequency = (formData.get("frequency") as any) || "Daily";
   const polarity  = (formData.get("polarity") as string) || "POSITIVE";
+  const unit      = (formData.get("unit") as string) || "Checklist";
+  // target_value: 1 untuk Checklist, nilai numerik untuk Numeric
+  const targetValueRaw = formData.get("target_value") as string;
+  const targetValue    = unit === "Checklist" ? 1 : Math.max(1, parseInt(targetValueRaw) || 1);
 
   if (!title) return { error: "Title is required" };
 
@@ -96,7 +145,8 @@ export async function createTask(formData: FormData) {
       frequency,
       polarity,
       is_custom: true,
-      target_value: 1,
+      unit,
+      target_value:  targetValue,
       current_value: 0
     }
   });
