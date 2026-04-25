@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PlaySquare, CheckCircle, PlusSquare, ArrowRight, X, Plus } from "lucide-react";
+import { PlaySquare, CheckCircle, PlusSquare, ArrowRight, X, Plus, Dumbbell } from "lucide-react";
 import { ConfirmModal } from "@/components/shared/ConfirmModal";
 import { addExerciseToWorkout, logSet, finishWorkout, createExercise } from "./actions";
 
@@ -29,6 +29,17 @@ export function ActiveWorkoutUI({
   const [showLib, setShowLib] = useState(false);
   const [showNewEx, setShowNewEx] = useState(false);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  // Track which exercises have weight input revealed
+  const [weightVisible, setWeightVisible] = useState<Set<string>>(new Set());
+
+  const toggleWeight = (weId: string) => {
+    setWeightVisible(prev => {
+      const next = new Set(prev);
+      if (next.has(weId)) next.delete(weId);
+      else next.add(weId);
+      return next;
+    });
+  };
 
   const handleFinish = () => {
     startTransition(async () => {
@@ -153,49 +164,109 @@ export function ActiveWorkoutUI({
               </div>
 
               {/* Sets Table */}
-              {we.sets.length > 0 && (
-                <div className="mb-6 overflow-x-auto">
-                  <table className="w-full text-left font-headline mt-4">
-                    <thead>
-                      <tr className="text-[10px] text-on-surface-variant border-b border-outline-variant uppercase tracking-widest">
-                        <th className="pb-2 px-2">Set</th>
-                        <th className="pb-2 px-2">Weight (KG)</th>
-                        <th className="pb-2 px-2">Reps</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-sm">
-                      {we.sets.map((set) => (
-                        <tr key={set.id} className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors text-white font-bold">
-                          <td className="py-3 px-2 text-on-surface-variant">{set.set_number}</td>
-                          <td className="py-3 px-2">{set.weight_kg}</td>
-                          <td className="py-3 px-2 text-primary">{set.completed_value}</td>
+              {we.sets.length > 0 && (() => {
+                const hasWeight = we.sets.some(s => (s.weight_kg ?? 0) > 0);
+                return (
+                  <div className="mb-6 overflow-x-auto">
+                    <table className="w-full text-left font-headline mt-4">
+                      <thead>
+                        <tr className="text-[10px] text-on-surface-variant border-b border-outline-variant uppercase tracking-widest">
+                          <th className="pb-2 px-2">Set</th>
+                          {hasWeight && <th className="pb-2 px-2">Weight (KG)</th>}
+                          <th className="pb-2 px-2">{we.exercises.measurement_unit || "Reps"}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="text-sm">
+                        {we.sets.map((set) => (
+                          <tr key={set.id} className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors text-white font-bold">
+                            <td className="py-3 px-2 text-on-surface-variant">{set.set_number}</td>
+                            {hasWeight && (
+                              <td className="py-3 px-2">
+                                {(set.weight_kg ?? 0) > 0
+                                  ? <span className="text-primary">{set.weight_kg} <span className="text-[10px] text-primary/60">kg</span></span>
+                                  : <span className="text-outline-variant text-[10px]">—</span>
+                                }
+                              </td>
+                            )}
+                            <td className="py-3 px-2 text-primary">{set.completed_value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
               {/* Log Set Form */}
-              <form 
+              <form
                 action={(formData) => handleAddSet(we.id, formData)}
-                className="bg-surface-container p-4 border border-outline-variant/30 grid grid-cols-2 md:grid-cols-3 gap-4 items-end"
+                className="bg-surface-container p-4 border border-outline-variant/30 space-y-3"
               >
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">Weight (KG)</label>
-                  <input type="number" step="0.5" name="weight" className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
+                <div className="grid grid-cols-2 gap-4 items-end">
+                  {/* Reps / unit input — always visible */}
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">
+                      {we.exercises.measurement_unit || "Reps"}
+                    </label>
+                    <input
+                      type="number"
+                      name="reps"
+                      required
+                      className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  {/* Weight input — only when toggle is ON */}
+                  {weightVisible.has(we.id) ? (
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-primary tracking-widest mb-1 flex items-center gap-1">
+                        <Dumbbell className="w-3 h-3" />
+                        Weight (KG)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        name="weight"
+                        className="w-full bg-surface-container-highest border border-primary/50 px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none"
+                        placeholder="0"
+                      />
+                    </div>
+                  ) : (
+                    /* Placeholder slot so grid stays balanced */
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => toggleWeight(we.id)}
+                        className="w-full py-2 border border-dashed border-outline-variant/50 text-on-surface-variant hover:border-primary hover:text-primary transition-colors font-headline font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5"
+                      >
+                        <Dumbbell className="w-3 h-3" />
+                        + Weight
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-on-surface-variant tracking-widest mb-1">{we.exercises.measurement_unit || "Reps"}</label>
-                  <input type="number" name="reps" required className="w-full bg-surface-container-highest border border-outline-variant px-3 py-2 text-white font-headline text-sm focus:border-primary outline-none" placeholder="0" />
+
+                {/* Actions Row */}
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="flex-1 bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-black font-headline font-black text-xs uppercase tracking-widest py-2.5 transition-colors disabled:opacity-50"
+                  >
+                    LOG SET
+                  </button>
+                  {weightVisible.has(we.id) && (
+                    <button
+                      type="button"
+                      onClick={() => toggleWeight(we.id)}
+                      className="px-3 py-2.5 border border-outline-variant/40 text-on-surface-variant hover:border-error hover:text-error transition-colors font-headline font-black text-[9px] uppercase tracking-widest"
+                      title="Sembunyikan Weight"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-                <button 
-                  type="submit" 
-                  disabled={isPending}
-                  className="bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-black font-headline font-black text-xs uppercase tracking-widest py-2.5 transition-colors disabled:opacity-50"
-                >
-                  LOG SET
-                </button>
               </form>
             </div>
           );
