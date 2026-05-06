@@ -77,27 +77,76 @@ export default async function DashboardPage() {
     };
   });
 
-  // 4. Heatmap Activity Data (364 Days)
-  // Get all point logs grouped by date in the last year
-  // (We'll do a simple fetch of logs in the last 364 days and aggregate by date string here)
-  const oneYearAgo = new Date();
-  oneYearAgo.setDate(oneYearAgo.getDate() - 364);
-  
-  const allLogsYear = await prisma.point_logs.findMany({
-    where: { 
+  // 4. Heatmap Activity Data
+  // Hanya hitung: task yang selesai (bukan punishment/cron) + exercise dalam workout completed
+  const tz = profile.timezone || "Asia/Jakarta";
+
+  // Hitung window grid heatmap: 52 minggu dari Senin minggu ini
+  const todayForGrid = new Date();
+  const dowForGrid = todayForGrid.getDay();
+  const daysToMonday = dowForGrid === 0 ? 6 : dowForGrid - 1;
+  const heatmapStart = new Date(todayForGrid);
+  heatmapStart.setDate(todayForGrid.getDate() - daysToMonday - 51 * 7);
+  heatmapStart.setHours(0, 0, 0, 0);
+
+  // Helper: konversi Date ke string YYYY-MM-DD di timezone user
+  const toDateKey = (d: Date) =>
+    d.toLocaleDateString("en-CA", { timeZone: tz });
+
+  // A. Task yang benar-benar diselesaikan user (bukan undo/punishment/cron)
+  const taskLogs = await prisma.point_logs.findMany({
+    where: {
       user_id: userId,
-      created_at: { gte: oneYearAgo }
+      source_type: "task",
+      xp_change: { gt: 0 },
+      created_at: { gte: heatmapStart },
     },
-    select: { created_at: true }
+    select: { created_at: true, description: true },
   });
 
-  // Count by date string "YYYY-MM-DD"
-  const activityMap: Record<string, number> = {};
-  allLogsYear.forEach(l => {
-    if (!l.created_at) return;
-    const dStr = new Date(l.created_at).toISOString().split('T')[0];
-    activityMap[dStr] = (activityMap[dStr] || 0) + 1;
+  // B. Workout yang sudah selesai + nama exercise di dalamnya
+  const completedWorkouts = await prisma.workouts.findMany({
+    where: {
+      user_id: userId,
+      status: "completed",
+      ended_at: { gte: heatmapStart },
+    },
+    select: {
+      ended_at: true,
+      workout_exercises: {
+        select: {
+          exercises: { select: { name: true } },
+        },
+      },
+    },
   });
+
+  // Build activityMap (count) dan dayDetails (detail untuk popup)
+  type DayDetail = { tasks: string[]; exercises: string[] };
+  const activityMap: Record<string, number> = {};
+  const dayDetails: Record<string, DayDetail> = {};
+
+  // Proses task logs
+  for (const log of taskLogs) {
+    if (!log.created_at) continue;
+    const key = toDateKey(log.created_at);
+    if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
+    // Strip prefix "Completed: " dari description
+    const title = log.description?.replace(/^Completed:\s*/i, "") ?? "Task";
+    dayDetails[key].tasks.push(title);
+    activityMap[key] = (activityMap[key] || 0) + 1;
+  }
+
+  // Proses workout exercises
+  for (const workout of completedWorkouts) {
+    if (!workout.ended_at) continue;
+    const key = toDateKey(workout.ended_at);
+    if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
+    for (const we of workout.workout_exercises) {
+      dayDetails[key].exercises.push(we.exercises.name);
+      activityMap[key] = (activityMap[key] || 0) + 1;
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -120,8 +169,9 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <Heatmap 
-          activityMap={activityMap} 
+        <Heatmap
+          activityMap={activityMap}
+          dayDetails={dayDetails}
           streakMax={profile.streak_max || 0}
         />
       </section>
