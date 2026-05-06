@@ -9,7 +9,7 @@ const WEEKS = 52;
 const CELL_SIZE = 12; // px
 const CELL_GAP = 3;   // px
 
-type DayDetail = { tasks: string[]; exercises: string[] };
+type DayDetail = { tasks: { title: string; desc: string }[]; exercises: { title: string; desc: string }[] };
 
 type Cell = {
   isoDate: string;
@@ -144,9 +144,12 @@ function DayDetailModal({
               </div>
               <ul className="space-y-1.5">
                 {tasks.map((t, i) => (
-                  <li key={i} className="flex items-center gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                    <span className="font-body text-sm text-white leading-tight">{t}</span>
+                  <li key={i} className="flex items-start justify-between gap-3 bg-surface-container-low p-2 border border-outline-variant/20 rounded-sm">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                      <span className="font-body text-sm text-white leading-tight">{t.title}</span>
+                    </div>
+                    <span className="font-headline font-bold text-[10px] text-primary whitespace-nowrap mt-0.5">{t.desc}</span>
                   </li>
                 ))}
               </ul>
@@ -164,9 +167,12 @@ function DayDetailModal({
               </div>
               <ul className="space-y-1.5">
                 {exercises.map((ex, i) => (
-                  <li key={i} className="flex items-center gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0" />
-                    <span className="font-body text-sm text-white leading-tight">{ex}</span>
+                  <li key={i} className="flex items-start justify-between gap-3 bg-surface-container-low p-2 border border-outline-variant/20 rounded-sm">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0" />
+                      <span className="font-body text-sm text-white leading-tight">{ex.title}</span>
+                    </div>
+                    <span className="font-headline font-bold text-[10px] text-secondary whitespace-nowrap mt-0.5">{ex.desc}</span>
                   </li>
                 ))}
               </ul>
@@ -289,11 +295,9 @@ export function Heatmap({
 
   const handleMouseEnter = (cell: Cell, e: React.MouseEvent) => {
     if (cell.future || !cell.isoDate) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
     setTooltip({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: e.clientX,
+      y: e.clientY,
       date: cell.dateLabel,
       count: cell.count,
     });
@@ -423,11 +427,10 @@ export function Heatmap({
           {/* Hover Tooltip */}
           {tooltip && (
             <div
-              className="pointer-events-none absolute z-40 bg-surface-container-high border border-outline-variant/50 px-3 py-2 shadow-xl"
+              className="pointer-events-none fixed z-[100] bg-surface-container-high border border-outline-variant/50 px-3 py-2 shadow-xl"
               style={{
-                left: tooltip.x + 12,
-                top: tooltip.y - 48,
-                transform: "translateY(-50%)",
+                left: tooltip.x + 16,
+                top: tooltip.y - 16,
                 whiteSpace: "nowrap",
               }}
             >

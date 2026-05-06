@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       xp_change: { gt: 0 },
       created_at: { gte: heatmapStart },
     },
-    select: { created_at: true, description: true },
+    select: { created_at: true, description: true, xp_change: true },
   });
 
   // B. Workout yang sudah selesai + nama exercise di dalamnya
@@ -115,14 +115,18 @@ export default async function DashboardPage() {
       ended_at: true,
       workout_exercises: {
         select: {
-          exercises: { select: { name: true } },
+          exercises: { select: { name: true, measurement_unit: true } },
+          sets: {
+            where: { is_completed: true },
+            select: { completed_value: true }
+          }
         },
       },
     },
   });
 
   // Build activityMap (count) dan dayDetails (detail untuk popup)
-  type DayDetail = { tasks: string[]; exercises: string[] };
+  type DayDetail = { tasks: { title: string; desc: string }[]; exercises: { title: string; desc: string }[] };
   const activityMap: Record<string, number> = {};
   const dayDetails: Record<string, DayDetail> = {};
 
@@ -133,7 +137,7 @@ export default async function DashboardPage() {
     if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
     // Strip prefix "Completed: " dari description
     const title = log.description?.replace(/^Completed:\s*/i, "") ?? "Task";
-    dayDetails[key].tasks.push(title);
+    dayDetails[key].tasks.push({ title, desc: `+${log.xp_change} XP` });
     activityMap[key] = (activityMap[key] || 0) + 1;
   }
 
@@ -143,7 +147,13 @@ export default async function DashboardPage() {
     const key = toDateKey(workout.ended_at);
     if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
     for (const we of workout.workout_exercises) {
-      dayDetails[key].exercises.push(we.exercises.name);
+      const totalReps = we.sets.reduce((sum, set) => sum + (set.completed_value || 0), 0);
+      const unit = we.exercises.measurement_unit || "reps";
+      const setsCount = we.sets.length;
+      dayDetails[key].exercises.push({
+        title: we.exercises.name,
+        desc: `${setsCount} Sets • ${totalReps} ${unit}`
+      });
       activityMap[key] = (activityMap[key] || 0) + 1;
     }
   }
