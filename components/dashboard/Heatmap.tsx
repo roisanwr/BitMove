@@ -149,7 +149,7 @@ function DayDetailModal({
                       <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
                       <span className="font-body text-sm text-white leading-tight">{t.title}</span>
                     </div>
-                    <span className="font-headline font-bold text-[10px] text-primary whitespace-nowrap mt-0.5">{t.desc}</span>
+                    <span className="font-headline font-bold text-[10px] text-on-surface-variant whitespace-nowrap mt-0.5">{t.desc}</span>
                   </li>
                 ))}
               </ul>
@@ -172,7 +172,7 @@ function DayDetailModal({
                       <div className="w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0" />
                       <span className="font-body text-sm text-white leading-tight">{ex.title}</span>
                     </div>
-                    <span className="font-headline font-bold text-[10px] text-secondary whitespace-nowrap mt-0.5">{ex.desc}</span>
+                    <span className="font-headline font-bold text-[10px] text-on-surface-variant whitespace-nowrap mt-0.5">{ex.desc}</span>
                   </li>
                 ))}
               </ul>

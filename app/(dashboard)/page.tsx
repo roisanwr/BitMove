@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       xp_change: { gt: 0 },
       created_at: { gte: heatmapStart },
     },
-    select: { created_at: true, description: true, xp_change: true },
+    select: { created_at: true, description: true },
   });
 
   // B. Workout yang sudah selesai + nama exercise di dalamnya
@@ -118,26 +118,64 @@ export default async function DashboardPage() {
           exercises: { select: { name: true, measurement_unit: true } },
           sets: {
             where: { is_completed: true },
-            select: { completed_value: true }
-          }
+            select: { completed_value: true },
+          },
         },
       },
     },
   });
+
+  // C. Metadata task user: unit & target_value untuk format desc popup
+  //    + judul task NEGATIVE dikecualikan dari heatmap sepenuhnya
+  const userTasks = await prisma.tasks.findMany({
+    where: { user_id: userId },
+    select: { title: true, unit: true, target_value: true, polarity: true },
+  });
+  // Map judul (lowercase) → { unit, target } — hanya task POSITIVE
+  const taskMetaMap = new Map(
+    userTasks
+      .filter((t) => t.polarity !== "NEGATIVE")
+      .map((t) => [t.title.toLowerCase(), { unit: t.unit, target: t.target_value }])
+  );
+  // Set judul task NEGATIVE untuk di-skip
+  const negTitles = new Set(
+    userTasks.filter((t) => t.polarity === "NEGATIVE").map((t) => t.title.toLowerCase())
+  );
+
+  // Helper: format volume exercise (seconds → "Xm Ys")
+  const formatVolume = (total: number, unit: string): string => {
+    if (unit === "seconds") {
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+    return `${total} ${unit}`;
+  };
 
   // Build activityMap (count) dan dayDetails (detail untuk popup)
   type DayDetail = { tasks: { title: string; desc: string }[]; exercises: { title: string; desc: string }[] };
   const activityMap: Record<string, number> = {};
   const dayDetails: Record<string, DayDetail> = {};
 
-  // Proses task logs
+  // Proses task logs — skip negative tasks sepenuhnya
   for (const log of taskLogs) {
     if (!log.created_at) continue;
+    const title = log.description?.replace(/^Completed:\s*/i, "") ?? "Task";
+
+    // Negative task yang dilanggar → exclude dari heatmap & popup
+    if (negTitles.has(title.toLowerCase())) continue;
+
     const key = toDateKey(log.created_at);
     if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
-    // Strip prefix "Completed: " dari description
-    const title = log.description?.replace(/^Completed:\s*/i, "") ?? "Task";
-    dayDetails[key].tasks.push({ title, desc: `+${log.xp_change} XP` });
+
+    // "Complete" untuk checklist | "target/target unit" untuk numeric
+    const meta = taskMetaMap.get(title.toLowerCase());
+    const isChecklist = !meta || meta.unit === "Checklist";
+    const desc = isChecklist
+      ? "Complete"
+      : `${meta.target}/${meta.target} ${meta.unit}`;
+
+    dayDetails[key].tasks.push({ title, desc });
     activityMap[key] = (activityMap[key] || 0) + 1;
   }
 
@@ -147,12 +185,12 @@ export default async function DashboardPage() {
     const key = toDateKey(workout.ended_at);
     if (!dayDetails[key]) dayDetails[key] = { tasks: [], exercises: [] };
     for (const we of workout.workout_exercises) {
+      if (we.sets.length === 0) continue; // skip exercise tanpa set apapun
       const totalReps = we.sets.reduce((sum, set) => sum + (set.completed_value || 0), 0);
       const unit = we.exercises.measurement_unit || "reps";
-      const setsCount = we.sets.length;
       dayDetails[key].exercises.push({
         title: we.exercises.name,
-        desc: `${setsCount} Sets • ${totalReps} ${unit}`
+        desc: `${we.sets.length} Sets • ${formatVolume(totalReps, unit)}`,
       });
       activityMap[key] = (activityMap[key] || 0) + 1;
     }
