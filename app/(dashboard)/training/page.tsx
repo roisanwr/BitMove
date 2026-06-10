@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { Play, Activity, Swords, Plus, LayoutGrid, BookOpen } from "lucide-react";
+import { Play, Activity, Swords, Plus, LayoutGrid, BookOpen, Wand2 } from "lucide-react";
 import { ActiveWorkoutUI } from "./ActiveWorkoutUI";
 import { getTodayWorkoutPlan } from "@/lib/services/workoutService";
 import { startWorkoutFromPlan, startEmptyWorkout } from "./actions";
@@ -230,32 +230,51 @@ async function TodayMissionView({
             ))}
           </div>
 
-          {/* Start Battle */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <form
-              action={async () => {
-                "use server";
-                const exerciseIds = todaysSchedule.map((s: any) => s.exercise_id);
-                await startWorkoutFromPlan(exerciseIds);
-              }}
-              className="flex-1"
-            >
-              <button className="w-full bg-secondary text-black font-headline font-black py-5 uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_25px_rgba(213,117,255,0.6)] transition-all glitch-effect text-lg">
-                <Swords className="w-6 h-6 fill-current" />
-                MULAI PERTARUNGAN
-              </button>
-            </form>
-            <form
-              action={async () => {
-                "use server";
-                await startEmptyWorkout();
-              }}
-            >
-              <button className="w-full sm:w-auto border-2 border-dashed border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary font-headline font-black py-5 px-8 uppercase tracking-widest flex items-center justify-center gap-3 transition-all">
-                <Plus className="w-4 h-4" />
-                BONUS SESI
-              </button>
-            </form>
+          {/* Start Options */}
+          <div className="space-y-3">
+            {/* Option 1: Ikut Jadwal */}
+            <div>
+              <div className="font-headline font-bold text-[9px] uppercase tracking-[0.2em] text-on-surface-variant mb-2 flex items-center gap-2">
+                <span className="h-px flex-1 bg-outline-variant/30" />
+                IKUT JADWAL PROGRAM
+                <span className="h-px flex-1 bg-outline-variant/30" />
+              </div>
+              <form
+                action={async () => {
+                  "use server";
+                  const exerciseIds = todaysSchedule.map((s: any) => s.exercise_id);
+                  await startWorkoutFromPlan(exerciseIds);
+                }}
+              >
+                <button className="w-full bg-secondary text-black font-headline font-black py-5 uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_25px_rgba(213,117,255,0.6)] transition-all glitch-effect text-lg">
+                  <Swords className="w-6 h-6 fill-current" />
+                  MULAI PERTARUNGAN
+                </button>
+              </form>
+            </div>
+
+            {/* Option 2: Custom Day */}
+            <div>
+              <div className="font-headline font-bold text-[9px] uppercase tracking-[0.2em] text-on-surface-variant mb-2 flex items-center gap-2">
+                <span className="h-px flex-1 bg-outline-variant/30" />
+                ATAU HARI INI FULL CUSTOM
+                <span className="h-px flex-1 bg-outline-variant/30" />
+              </div>
+              <form
+                action={async () => {
+                  "use server";
+                  await startEmptyWorkout();
+                }}
+              >
+                <button className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-black font-headline font-black py-4 uppercase tracking-widest flex items-center justify-center gap-3 transition-all group">
+                  <Wand2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  CUSTOM DAY — BEBAS PILIH EXERCISE
+                </button>
+              </form>
+              <p className="font-headline font-bold text-[9px] uppercase tracking-widest text-on-surface-variant/60 text-center mt-2">
+                Abaikan jadwal hari ini. Pilih sendiri dari exercise library.
+              </p>
+            </div>
           </div>
         </div>
       ) : (

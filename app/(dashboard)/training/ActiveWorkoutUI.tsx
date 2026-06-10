@@ -78,6 +78,13 @@ export function ActiveWorkoutUI({
     return { currentTier, nextTierObj };
   };
 
+  // Deteksi apakah ini sesi dari jadwal atau custom day
+  const scheduledExerciseIds = new Set(todaysSchedule?.map((s: any) => s.exercise_id) ?? []);
+  const hasScheduledExercises = workout.workout_exercises.some(we =>
+    scheduledExerciseIds.has(we.exercise_id)
+  );
+  const isCustomDay = todaysSchedule && todaysSchedule.length > 0 && !hasScheduledExercises;
+
   return (
     <div className="bg-surface-container border-l-4 border-secondary shadow-[0_0_15px_rgba(213,117,255,0.1)] p-6 md:p-8 animate-in fade-in zoom-in-95 duration-300 relative">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-outline-variant/30 pb-6 mb-8">
@@ -91,6 +98,16 @@ export function ActiveWorkoutUI({
           <h2 className="font-headline font-black text-2xl uppercase tracking-tighter text-white">
             ACTIVE TRAINING SESSION
           </h2>
+          {/* Badge mode sesi */}
+          {isCustomDay ? (
+            <div className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary px-3 py-1 font-headline font-black text-[9px] uppercase tracking-widest">
+              <span>✦</span> CUSTOM DAY — SESI BEBAS
+            </div>
+          ) : todaysSchedule && todaysSchedule.length > 0 ? (
+            <div className="mt-2 inline-flex items-center gap-1.5 bg-secondary/10 border border-secondary/30 text-secondary px-3 py-1 font-headline font-black text-[9px] uppercase tracking-widest">
+              <span>◈</span> PROGRAM SESSION
+            </div>
+          ) : null}
         </div>
         
         <div className="font-headline text-3xl font-black text-primary glitch-effect">
