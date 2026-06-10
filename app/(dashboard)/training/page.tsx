@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { Play, Activity, Swords, Plus, LayoutGrid } from "lucide-react";
+import { Play, Activity, Swords, Plus, LayoutGrid, BookOpen } from "lucide-react";
 import { ActiveWorkoutUI } from "./ActiveWorkoutUI";
 import { getTodayWorkoutPlan } from "@/lib/services/workoutService";
 import { startWorkoutFromPlan, startEmptyWorkout } from "./actions";
@@ -114,6 +114,13 @@ async function TodayMissionView({
             >
               <LayoutGrid className="w-5 h-5" />
               BUILD PROGRAM
+            </Link>
+            <Link
+              href="/training/library"
+              className="flex-1 bg-primary text-black font-headline font-black py-4 uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_20px_rgba(142,255,113,0.5)] transition-all glitch-effect"
+            >
+              <BookOpen className="w-5 h-5" />
+              MULAI DARI TEMPLATE
             </Link>
             <form
               action={async () => {

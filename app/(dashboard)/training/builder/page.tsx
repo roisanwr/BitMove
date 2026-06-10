@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { BuilderUI } from "./BuilderUI";
 import { getProgramsForUser, getProgramById } from "@/lib/services/programService";
 import { removeProgramAction, setActiveProgramAction } from "./actions";
-import { Trash2, ArrowLeft, Pencil, Zap } from "lucide-react";
+import { Trash2, ArrowLeft, Pencil, Zap, BookOpen, Info } from "lucide-react";
 import { ProgramActionButtons } from "./ProgramActionButtons";
 import Link from "next/link";
 
@@ -14,12 +14,13 @@ export const metadata = {
 export default async function BuilderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; from?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) return <div>Unauthorized Access.</div>;
 
-  const { edit } = await searchParams;
+  const { edit, from } = await searchParams;
+  const isFromTemplate = from === "template";
 
   const [exercises, programs, initialProgram] = await Promise.all([
     prisma.exercise_library.findMany({
@@ -41,6 +42,22 @@ export default async function BuilderPage({
           Kembali ke Training Ground
         </Link>
       </div>
+
+      {/* Banner: dari template */}
+      {isFromTemplate && (
+        <div className="mb-6 bg-primary/10 border border-primary/30 p-4 flex items-start gap-3">
+          <BookOpen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <div className="font-headline font-black text-sm uppercase tracking-widest text-primary mb-1">
+              Program Dibuat dari Template
+            </div>
+            <p className="font-body text-sm text-on-surface-variant">
+              Template sudah di-load. Periksa jadwal di bawah, tambah atau hapus slot yang perlu, lalu klik{" "}
+              <span className="text-white font-semibold">SIMPAN &amp; AKTIFKAN</span> jika sudah siap.
+            </p>
+          </div>
+        </div>
+      )}
 
       <BuilderUI key={initialProgram?.id ?? 'new'} exercises={exercises} initialProgram={initialProgram} />
 

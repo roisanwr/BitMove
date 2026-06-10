@@ -10,17 +10,28 @@ export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: bo
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMasterDataOpen, setIsMasterDataOpen] = useState(false);
+  const [isTrainingOpen, setIsTrainingOpen] = useState(false);
 
   useEffect(() => {
     if (pathname.startsWith("/master-data")) {
       setIsMasterDataOpen(true);
+    }
+    if (pathname.startsWith("/training")) {
+      setIsTrainingOpen(true);
     }
   }, [pathname]);
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: Grid },
     { label: "Daily Quests", href: "/quests", icon: Award },
-    { label: "Training Ground", href: "/training", icon: Dumbbell },
+    { 
+      label: "Training Ground", 
+      href: "/training", 
+      icon: Dumbbell,
+      subItems: [
+        { label: "Program Library", href: "/training/library" },
+      ]
+    },
     { label: "Mission Log", href: "/mission-log", icon: ReceiptText },
     { label: "Black Market", href: "/market", icon: Store },
     { 
@@ -65,6 +76,66 @@ export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: bo
           </div>
           <nav className="space-y-2">
             {navItems.map((item) => {
+              // Case 1: Item punya href + subItems (Training Ground style)
+              if (item.subItems && item.href) {
+                const isParentActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                return (
+                  <div key={item.label} className="space-y-1">
+                    <div className={cn(
+                      "flex items-center justify-between transition-colors",
+                      isParentActive ? "bg-primary/10" : ""
+                    )}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex-1 flex items-center gap-3 p-3 font-headline uppercase text-xs tracking-tighter transition-colors",
+                          isParentActive
+                            ? "text-primary font-bold"
+                            : "text-[#484848] hover:bg-surface-container-high hover:text-primary"
+                        )}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                      <button
+                        onClick={() => setIsTrainingOpen(!isTrainingOpen)}
+                        className={cn(
+                          "p-3 transition-colors",
+                          isParentActive ? "text-primary" : "text-[#484848] hover:text-primary"
+                        )}
+                        aria-label="Toggle sub-menu"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {isTrainingOpen ? "expand_less" : "expand_more"}
+                        </span>
+                      </button>
+                    </div>
+                    {isTrainingOpen && (
+                      <div className="pl-11 pr-3 py-1 space-y-1 bg-black/20 border-l-2 border-primary/20 ml-2">
+                        {item.subItems.map((sub) => {
+                          const isActive = pathname === sub.href;
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className={cn(
+                                "block p-2 text-[10px] font-headline uppercase tracking-widest transition-all",
+                                isActive
+                                  ? "text-primary font-bold border-l-2 border-primary pl-2 -ml-[2px]"
+                                  : "text-[#484848] hover:text-white border-l-2 border-transparent pl-2 -ml-[2px] hover:border-outline-variant"
+                              )}
+                            >
+                              {sub.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Case 2: Accordion tanpa href (Master Data)
               if (item.subItems) {
                 const isSubActive = pathname.startsWith("/master-data");
                 return (
@@ -111,6 +182,8 @@ export function Sidebar({ isDesktopOpen, setIsDesktopOpen }: { isDesktopOpen: bo
                 );
               }
 
+              // Case 3: Link biasa tanpa subItems
+              if (!item.href) return null;
               const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !item.subItems);
               
               return (
