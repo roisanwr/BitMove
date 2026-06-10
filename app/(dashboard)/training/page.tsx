@@ -4,8 +4,10 @@ import Link from "next/link";
 import { Play, Activity, Swords, Plus, LayoutGrid, BookOpen, Wand2 } from "lucide-react";
 import { ActiveWorkoutUI } from "./ActiveWorkoutUI";
 import { getTodayWorkoutPlan } from "@/lib/services/workoutService";
+import { getProgramsForUser } from "@/lib/services/programService";
 import { startWorkoutFromPlan, startEmptyWorkout } from "./actions";
 import { tier_enum } from "@prisma/client";
+import { QuickProgramSwitcher } from "./QuickProgramSwitcher";
 
 export const metadata = {
   title: "TRAINING GROUND | BITMOVE",
@@ -51,7 +53,10 @@ export default async function TrainingPage() {
   });
 
   const difficultyScales = await prisma.difficulty_scales.findMany();
-  const plan = await getTodayWorkoutPlan(session.user.id);
+  const [plan, allPrograms] = await Promise.all([
+    getTodayWorkoutPlan(session.user.id),
+    getProgramsForUser(session.user.id),
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto pb-24">
@@ -73,7 +78,7 @@ export default async function TrainingPage() {
           todaysSchedule={plan?.todaysSchedule || []}
         />
       ) : (
-        <TodayMissionView plan={plan} library={library} />
+        <TodayMissionView plan={plan} library={library} allPrograms={allPrograms} />
       )}
     </div>
   );
@@ -84,9 +89,11 @@ import type { exercise_library } from "@prisma/client";
 async function TodayMissionView({
   plan,
   library,
+  allPrograms,
 }: {
   plan: any;
   library: exercise_library[];
+  allPrograms: any[];
 }) {
   const today = new Date();
   const todayDayNum = today.getDay() === 0 ? 7 : today.getDay();
@@ -94,10 +101,21 @@ async function TodayMissionView({
 
   // STATE C: Tidak ada program aktif → CTA ke builder
   if (!plan.hasPlan || !plan.activeProgram) {
+    const hasInactivePrograms = allPrograms.length > 0;
+
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* No Program CTA */}
-        <div className="bg-surface-container p-8 border-t-4 border-secondary col-span-full max-w-2xl relative overflow-hidden group">
+      <div className="grid grid-cols-1 gap-8">
+        {hasInactivePrograms && (
+          <div className="bg-surface-container-high border border-outline-variant/30 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-headline font-black uppercase text-secondary">PROGRAM TERSIMPAN TERSEDIA</h3>
+              <p className="font-body text-xs text-on-surface-variant mt-1">Kamu memiliki program yang sedang tidak aktif. Ingin mengaktifkannya?</p>
+            </div>
+            <QuickProgramSwitcher activeProgramId="" programs={allPrograms} />
+          </div>
+        )}
+
+        <div className="bg-surface-container p-8 border-t-4 border-secondary max-w-2xl relative overflow-hidden group">
           <div className="absolute -bottom-8 -right-8 opacity-5 group-hover:opacity-10 transition-opacity">
             <LayoutGrid className="w-48 h-48" />
           </div>
@@ -172,6 +190,10 @@ async function TodayMissionView({
           >
             Edit
           </Link>
+          <QuickProgramSwitcher 
+            activeProgramId={activeProgram.id} 
+            programs={allPrograms} 
+          />
           <Link
             href="/training/builder"
             className="font-headline font-bold text-[10px] uppercase tracking-widest text-black bg-primary hover:shadow-[0_0_10px_rgba(142,255,113,0.4)] px-3 py-2 transition-all flex items-center gap-1"
